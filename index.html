@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="media/TracoD_New_Interno_Prancheta 1 cópia 12.png">
+  <title>Calendário Editorial</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.47.0/tabler-icons.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- CABEÇALHO -->
+  <div class="cabecalho">
+    <div class="logo">
+      <video class="logomotion" src="media/LogoTracoD.mp4" autoplay muted loop playsinline></video>
+      <div class="sep"></div>
+      <div style="color:#ebebeb;font-size:18px;padding:20px;">Calendário Editorial</div>
+      <div class="sep"></div>
+      <div class="hdr-client" id="hdr-client">Nome do cliente</div>
+    </div>
+    <!-- Sem botões de agência aqui -->
+  </div>
+
+  <!-- ABAS — cliente só vê Calendário e Demandas -->
+  <div class="tabs-bar">
+    <button class="tab-btn on" id="tab-calendar" onclick="setTab('calendar')">
+      <i class="ti ti-calendar" aria-hidden="true"></i> Calendário
+    </button>
+    <button class="tab-btn" id="tab-demands" onclick="setTab('demands')">
+      <i class="ti ti-inbox" aria-hidden="true"></i> Demandas
+      <span class="demand-badge" id="demand-badge" style="display:none">0</span>
+    </button>
+  </div>
+
+  <!-- SEÇÃO: CALENDÁRIO -->
+  <div id="section-calendar">
+
+    <div class="client-banner">
+      <i class="ti ti-calendar-check" aria-hidden="true"></i>
+      Confira as publicações do mês e aprove os criativos pendentes.
+    </div>
+
+    <!-- Nav mês simplificado -->
+    <div class="client-nav-bar">
+      <button class="nav-btn" onclick="navMonth(-1)"><i class="ti ti-chevron-left" aria-hidden="true"></i>Anterior</button>
+      <span class="month-label" id="month-label">—</span>
+      <button class="nav-btn" onclick="navMonth(1)"><i class="ti ti-chevron-right" aria-hidden="true"></i>Próximo</button>
+    </div>
+
+    <div class="stats" id="stats-bar"></div>
+    <div class="content" id="content"></div>
+  </div>
+
+  <!-- SEÇÃO: DEMANDAS -->
+  <div id="section-demands" style="display:none">
+    <div class="demands-header">
+      <div>
+        <div class="demands-title">Minhas demandas</div>
+        <div class="demands-subtitle">Pedidos enviados para a agência TraçoD</div>
+      </div>
+      <button class="btn-add demands-header-btn" onclick="openDemandModal()">
+        <i class="ti ti-plus" aria-hidden="true"></i> Nova Demanda
+      </button>
+    </div>
+    <div class="content">
+      <div id="demands-list"></div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- MODAL: APROVAÇÃO DO CLIENTE -->
+<div class="modal-overlay" id="client-approval-modal" style="display:none">
+  <div class="modal modal-client" style="max-width:520px">
+    <div class="modal-head client-modal-head">
+      <div>
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Aprovação de criativo</div>
+        <h3 id="ca-theme">—</h3>
+      </div>
+      <button class="modal-close" onclick="closeClientApproval()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="ca-meta-row">
+        <div class="ca-meta-item">
+          <div class="ca-meta-label">Plataforma</div>
+          <div class="ca-meta-value" id="ca-platform">—</div>
+        </div>
+        <div class="ca-meta-item">
+          <div class="ca-meta-label">Formato</div>
+          <div class="ca-meta-value" id="ca-format">—</div>
+        </div>
+        <div class="ca-meta-item">
+          <div class="ca-meta-label">Data prevista</div>
+          <div class="ca-meta-value" id="ca-date">—</div>
+        </div>
+      </div>
+      <div>
+        <div class="ca-meta-label">Observações da agência</div>
+        <div class="ca-obs-box" id="ca-obs"></div>
+      </div>
+      <div id="ca-drive-wrap">
+        <a id="ca-drive-link" href="#" target="_blank" class="btn-drive">
+          <i class="ti ti-brand-google-drive" aria-hidden="true"></i> Abrir criativo no Drive
+        </a>
+      </div>
+      <div id="ca-history-wrap" style="display:none">
+        <div class="ca-meta-label">Histórico</div>
+        <div id="ca-history-list" class="approval-history"></div>
+      </div>
+      <div class="ca-decision-section">
+        <div class="ca-meta-label" style="margin-bottom:10px">Sua decisão</div>
+        <label class="ca-option ca-option--approve">
+          <input type="radio" name="ca-decision" id="ca-decision-approved" value="approved" onchange="onDecisionChange('approved')">
+          <div class="ca-option-inner">
+            <i class="ti ti-circle-check" aria-hidden="true"></i>
+            <div>
+              <div class="ca-option-title">Aprovado</div>
+              <div class="ca-option-sub">O criativo está correto e pode ser publicado</div>
+            </div>
+          </div>
+        </label>
+        <label class="ca-option ca-option--alterar">
+          <input type="radio" name="ca-decision" id="ca-decision-alterar" value="alterar" onchange="onDecisionChange('alterar')">
+          <div class="ca-option-inner">
+            <i class="ti ti-edit" aria-hidden="true"></i>
+            <div>
+              <div class="ca-option-title">Solicitar alteração</div>
+              <div class="ca-option-sub">Preciso de ajustes antes da publicação</div>
+            </div>
+          </div>
+        </label>
+        <div id="ca-alterar-wrap" style="display:none;margin-top:12px">
+          <label class="form-label">Descreva o que precisa ser alterado <span class="form-req">*</span></label>
+          <textarea id="ca-alterar-text" rows="3" placeholder="Ex: Corrigir o preço para R$ 49,90, trocar a foto do produto..."></textarea>
+          <div style="margin-top:8px">
+            <label class="form-label">Arquivo de referência (opcional)</label>
+            <label class="file-upload-label">
+              <i class="ti ti-upload" aria-hidden="true"></i>
+              <span>Anexar imagem ou documento de referência</span>
+              <input type="file" id="ca-file" multiple accept="image/*,.pdf" onchange="handleApprovalFileSelect(this)" style="display:none">
+            </label>
+            <div id="ca-file-preview" class="file-preview-area"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <div></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-cancel" onclick="closeClientApproval()">Cancelar</button>
+        <button class="btn-save"   onclick="submitClientApproval()">Enviar resposta</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL: NOVA DEMANDA -->
+<div class="modal-overlay" id="demand-form-modal" style="display:none">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-head">
+      <h3>Nova Demanda</h3>
+      <button class="modal-close" onclick="closeDemandModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <label class="form-label">Título da demanda <span class="form-req">*</span></label>
+        <input id="df-title" placeholder="Ex: Banner para promoção de julho">
+      </div>
+      <div class="form-row">
+        <div>
+          <label class="form-label">Tipo de conteúdo</label>
+          <select id="df-type">
+            <option>Post</option><option>Reels</option><option>Stories</option>
+            <option>Carrossel</option><option>Vídeo</option><option>Banner</option>
+            <option>E-mail Marketing</option><option>Material Impresso</option><option>Outro</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Prazo desejado</label>
+          <input type="date" id="df-deadline">
+        </div>
+      </div>
+      <div>
+        <label class="form-label">Descrição / briefing</label>
+        <textarea id="df-description" rows="3" placeholder="Descreva o que precisa: objetivo, público, tom, informações relevantes..."></textarea>
+      </div>
+      <div>
+        <label class="form-label">Referência / link</label>
+        <input id="df-ref" placeholder="Link de referência visual, produto ou conteúdo">
+      </div>
+      <div>
+        <label class="form-label">Arquivos de referência</label>
+        <label class="file-upload-label">
+          <i class="ti ti-upload" aria-hidden="true"></i>
+          <span>Clique para anexar imagens, PDF ou faca de corte</span>
+          <input type="file" id="df-file" multiple accept="image/*,.pdf,.ai,.eps,.cdr,.zip" onchange="handleFileSelect(this)" style="display:none">
+        </label>
+        <div id="df-file-preview" class="file-preview-area"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <div></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-cancel" onclick="closeDemandModal()">Cancelar</button>
+        <button class="btn-save"   onclick="submitDemand()">Enviar demanda</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: DETALHE DA DEMANDA (cliente vê status + notas da agência, sem editar) -->
+<div class="modal-overlay" id="demand-detail-modal" style="display:none">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-head">
+      <h3 id="dd-title">Demanda</h3>
+      <button class="modal-close" onclick="closeDemandDetail()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="demand-detail-meta">
+        <span id="dd-type" class="demand-type-pill"></span>
+        <span style="color:var(--color-text-tertiary);font-size:12px">Enviado em <span id="dd-created"></span></span>
+      </div>
+      <div>
+        <label class="form-label">Descrição / briefing</label>
+        <div class="demand-detail-text" id="dd-description"></div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label class="form-label">Prazo desejado</label>
+          <div class="demand-detail-text" id="dd-deadline"></div>
+        </div>
+        <div id="dd-ref-wrap">
+          <label class="form-label">Referência</label>
+          <a id="dd-ref-link" href="#" target="_blank" style="font-size:13px;color:#3b82f6;word-break:break-all"></a>
+        </div>
+      </div>
+      <div id="dd-files-wrap">
+        <label class="form-label">Arquivos anexados</label>
+        <div id="dd-files-list" class="file-preview-area"></div>
+      </div>
+      <div>
+        <label class="form-label">Status</label>
+        <div id="dd-status-display" class="demand-detail-text"></div>
+        <!-- campo oculto para reutilizar saveDemandDetail sem quebrar -->
+        <select id="dd-status-sel" style="display:none"></select>
+      </div>
+      <div id="dd-notes-wrap" style="display:none">
+        <label class="form-label">Retorno da agência</label>
+        <div class="ca-obs-box" id="dd-agency-notes-display"></div>
+        <textarea id="dd-agency-notes" style="display:none"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <div></div>
+      <button class="btn-cancel" onclick="closeDemandDetail()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Força modo cliente ao carregar
+  window.PAGE_MODE = "client";
+</script>
+<script src="js/script.js"></script>
+</body>
+</html>

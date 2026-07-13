@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="media/TracoD_New_Interno_Prancheta 1 cópia 12.png">
+  <title>Calendário Editorial — Agência</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.47.0/tabler-icons.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- CABEÇALHO -->
+  <div class="cabecalho">
+    <div class="logo">
+      <video class="logomotion" src="media/LogoTracoD.mp4" autoplay muted loop playsinline></video>
+      <div class="sep"></div>
+      <div style="color:#ebebeb;font-size:18px;padding:20px;">Calendário Editorial</div>
+      <div class="sep"></div>
+      <div class="hdr-client" id="hdr-client">Nome do cliente</div>
+    </div>
+    <div class="hdr-actions">
+      <button id="btn-settings" class="btn-cfg" onclick="openSettings()"><i class="ti ti-settings" aria-hidden="true"></i>Configurar</button>
+      <button id="btn-add-pub"  class="btn-add" onclick="openAdd(null)"><i class="ti ti-plus" aria-hidden="true"></i>Adicionar</button>
+    </div>
+  </div>
+
+  <!-- ABAS -->
+  <div class="tabs-bar">
+    <button class="tab-btn on" id="tab-calendar" onclick="setTab('calendar')">
+      <i class="ti ti-calendar" aria-hidden="true"></i> Calendário
+    </button>
+    <button class="tab-btn" id="tab-demands" onclick="setTab('demands')">
+      <i class="ti ti-inbox" aria-hidden="true"></i> Demandas
+      <span class="demand-badge" id="demand-badge" style="display:none">0</span>
+    </button>
+  </div>
+
+  <!-- SEÇÃO: CALENDÁRIO -->
+  <div id="section-calendar">
+    <div id="filters-bar">
+      <div class="nav-bar">
+        <div class="month-nav">
+          <button class="nav-btn" onclick="navMonth(-1)"><i class="ti ti-chevron-left" aria-hidden="true"></i>Anterior</button>
+          <span class="month-label" id="month-label">—</span>
+          <button class="nav-btn" onclick="navMonth(1)"><i class="ti ti-chevron-right" aria-hidden="true"></i>Próximo</button>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <div class="filters">
+            <select class="filter-sel" id="f-status"   onchange="applyFilter()"><option value="">Status</option></select>
+            <select class="filter-sel" id="f-platform" onchange="applyFilter()"><option value="">Plataforma</option></select>
+            <button class="btn-clr" id="btn-clr" style="display:none" onclick="clearFilters()"><i class="ti ti-x" aria-hidden="true"></i>Limpar</button>
+          </div>
+          <div class="view-toggle">
+            <button class="view-btn on" id="vbtn-grid" onclick="setView('grid')"><i class="ti ti-calendar" aria-hidden="true"></i> Grade</button>
+            <button class="view-btn"    id="vbtn-list" onclick="setView('list')"><i class="ti ti-list"     aria-hidden="true"></i> Lista</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="stats" id="stats-bar"></div>
+    <div class="content" id="content"></div>
+  </div>
+
+  <!-- SEÇÃO: DEMANDAS -->
+  <div id="section-demands" style="display:none">
+    <div class="demands-header">
+      <div>
+        <div class="demands-title">Demandas do cliente</div>
+        <div class="demands-subtitle">Pedidos recebidos dos clientes</div>
+      </div>
+    </div>
+    <div class="content">
+      <div id="demands-list"></div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- MODAL: ADICIONAR / EDITAR PUBLICAÇÃO -->
+<div class="modal-overlay" id="modal" style="display:none">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modal-title">Nova publicação</h3>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="approval-inline-actions" id="modal-approval-actions" style="display:none">
+      <div class="approval-inline-label">
+        <i class="ti ti-clock" aria-hidden="true"></i>
+        Esta peça está aguardando aprovação do cliente
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-refuse"  onclick="inlineRefuse()"><i class="ti ti-x"     aria-hidden="true"></i> Marcar como Recusado</button>
+        <button class="btn-approve" onclick="inlineApprove()"><i class="ti ti-check" aria-hidden="true"></i> Marcar como Agendado</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <div id="modal-del-wrap"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+        <button class="btn-save" id="btn-save" onclick="saveEntry()">Adicionar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL: CONFIGURAÇÕES -->
+<div class="modal-overlay" id="settings-modal" style="display:none">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-head">
+      <h3>Configurações</h3>
+      <button class="modal-close" onclick="closeSettings()">×</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <label class="form-label">Nome do cliente</label>
+        <input id="inp-client" placeholder="Ex: Mopal Inox">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <div></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-cancel" onclick="closeSettings()">Cancelar</button>
+        <button class="btn-save"   onclick="saveSettings()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL: DETALHE DA DEMANDA (agência edita status e notas) -->
+<div class="modal-overlay" id="demand-detail-modal" style="display:none">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-head">
+      <h3 id="dd-title">Demanda</h3>
+      <button class="modal-close" onclick="closeDemandDetail()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="demand-detail-meta">
+        <span id="dd-type" class="demand-type-pill"></span>
+        <span style="color:var(--color-text-tertiary);font-size:12px">Enviado em <span id="dd-created"></span></span>
+      </div>
+      <div>
+        <label class="form-label">Descrição / briefing</label>
+        <div class="demand-detail-text" id="dd-description"></div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label class="form-label">Prazo desejado</label>
+          <div class="demand-detail-text" id="dd-deadline"></div>
+        </div>
+        <div id="dd-ref-wrap">
+          <label class="form-label">Referência</label>
+          <a id="dd-ref-link" href="#" target="_blank" style="font-size:13px;color:#3b82f6;word-break:break-all"></a>
+        </div>
+      </div>
+      <div id="dd-files-wrap">
+        <label class="form-label">Arquivos anexados</label>
+        <div id="dd-files-list" class="file-preview-area"></div>
+      </div>
+      <div>
+        <label class="form-label">Status da demanda</label>
+        <select id="dd-status-sel"></select>
+        <div id="dd-status-display" style="display:none"></div>
+      </div>
+      <div>
+        <label class="form-label">Notas da agência (visível ao cliente)</label>
+        <textarea id="dd-agency-notes" rows="3" placeholder="Ex: Iniciamos a produção, entrega prevista para quinta-feira."></textarea>
+        <div id="dd-agency-notes-display" style="display:none"></div>
+      </div>
+      <div id="dd-notes-wrap" style="display:none"></div>
+    </div>
+    <div class="modal-foot">
+      <div></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-cancel" onclick="closeDemandDetail()">Fechar</button>
+        <button class="btn-save"   onclick="saveDemandDetail()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modais de aprovação e demanda do cliente não existem aqui -->
+<div id="client-approval-modal" style="display:none"></div>
+<div id="demand-form-modal"     style="display:none"></div>
+
+<script>
+  window.PAGE_MODE = "agency";
+</script>
+<script src="js/script.js"></script>
+</body>
+</html>
