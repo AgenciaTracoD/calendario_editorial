@@ -22,7 +22,10 @@
       <div class="sep"></div>
       <div class="hdr-client" id="hdr-client">Nome do cliente</div>
     </div>
-    <div class="hdr-actions">
+    <div class="hdr-actions" style="display:flex;align-items:center;gap:8px">
+      <select id="client-select" class="filter-sel" onchange="onClientPickerChange(this.value)" style="min-width:160px"></select>
+      <button class="btn-cfg" onclick="promptNewClient()"><i class="ti ti-plus" aria-hidden="true"></i>Novo cliente</button>
+      <button class="btn-cfg" onclick="copyClientLink()"><i class="ti ti-link" aria-hidden="true"></i>Link do cliente</button>
       <button id="btn-settings" class="btn-cfg" onclick="openSettings()"><i class="ti ti-settings" aria-hidden="true"></i>Configurar</button>
       <button id="btn-add-pub"  class="btn-add" onclick="openAdd(null)"><i class="ti ti-plus" aria-hidden="true"></i>Adicionar</button>
     </div>
@@ -193,6 +196,9 @@
 <script>
   window.PAGE_MODE = "agency";
 </script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
 <script src="js/script.js"></script>
 </body>
 </html>
