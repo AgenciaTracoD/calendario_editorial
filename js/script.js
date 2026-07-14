@@ -105,24 +105,28 @@ function saveDemands() {
    ----------------------------------------------------------- */
 function toggleClientMode() {
   clientMode = !clientMode;
-  document.getElementById("app").classList.toggle("client-mode", clientMode);
+  const app = document.getElementById("app");
+  if (app) app.classList.toggle("client-mode", clientMode);
 
   const btn = document.getElementById("btn-mode-toggle");
+  const btnAddPub  = document.getElementById("btn-add-pub");
+  const btnSettings = document.getElementById("btn-settings");
+  const tabDemands = document.getElementById("tab-demands");
+  const filtersBar = document.getElementById("filters-bar");
+
   if (clientMode) {
-    btn.innerHTML = `<i class="ti ti-building" aria-hidden="true"></i> Modo Agência`;
-    btn.classList.add("active-mode");
+    if (btn) { btn.innerHTML = `<i class="ti ti-building" aria-hidden="true"></i> Modo Agência`; btn.classList.add("active-mode"); }
     // Oculta botões internos da agência
-    document.getElementById("btn-add-pub").style.display    = "none";
-    document.getElementById("btn-settings").style.display   = "none";
-    document.getElementById("tab-demands").style.display    = "none";
-    document.getElementById("filters-bar").style.display    = "none";
+    if (btnAddPub)   btnAddPub.style.display   = "none";
+    if (btnSettings) btnSettings.style.display = "none";
+    if (tabDemands)  tabDemands.style.display  = "none";
+    if (filtersBar)  filtersBar.style.display  = "none";
   } else {
-    btn.innerHTML = `<i class="ti ti-user" aria-hidden="true"></i> Modo Cliente`;
-    btn.classList.remove("active-mode");
-    document.getElementById("btn-add-pub").style.display    = "";
-    document.getElementById("btn-settings").style.display   = "";
-    document.getElementById("tab-demands").style.display    = "";
-    document.getElementById("filters-bar").style.display    = "";
+    if (btn) { btn.innerHTML = `<i class="ti ti-user" aria-hidden="true"></i> Modo Cliente`; btn.classList.remove("active-mode"); }
+    if (btnAddPub)   btnAddPub.style.display   = "";
+    if (btnSettings) btnSettings.style.display = "";
+    if (tabDemands)  tabDemands.style.display  = "";
+    if (filtersBar)  filtersBar.style.display  = "";
     // Volta para calendário se estava em demandas
     if (activeTab === "demands") setTab("calendar");
   }
@@ -152,8 +156,10 @@ function navMonth(delta) {
 }
 function setView(v) {
   view = v;
-  document.getElementById("vbtn-grid").className = "view-btn" + (v === "grid" ? " on" : "");
-  document.getElementById("vbtn-list").className = "view-btn" + (v === "list" ? " on" : "");
+  const gridBtn = document.getElementById("vbtn-grid");
+  const listBtn = document.getElementById("vbtn-list");
+  if (gridBtn) gridBtn.className = "view-btn" + (v === "grid" ? " on" : "");
+  if (listBtn) listBtn.className = "view-btn" + (v === "list" ? " on" : "");
   renderContent();
 }
 
@@ -161,12 +167,17 @@ function setView(v) {
    8. FILTROS
    ----------------------------------------------------------- */
 function applyFilter() {
-  filter.status   = document.getElementById("f-status").value;
-  filter.platform = document.getElementById("f-platform").value;
+  const elStatus   = document.getElementById("f-status");
+  const elPlatform = document.getElementById("f-platform");
+  if (!elStatus || !elPlatform) return;
+  filter.status   = elStatus.value;
+  filter.platform = elPlatform.value;
   const active = filter.status || filter.platform;
-  document.getElementById("btn-clr").style.display = active ? "inline-flex" : "none";
+  const btnClr = document.getElementById("btn-clr");
+  if (btnClr) btnClr.style.display = active ? "inline-flex" : "none";
   ["f-status","f-platform"].forEach(id => {
     const el = document.getElementById(id);
+    if (!el) return;
     el.className = "filter-sel" + (el.value ? " active" : "");
   });
   renderContent();
@@ -174,10 +185,13 @@ function applyFilter() {
 function clearFilters() {
   filter = { status: "", platform: "" };
   ["f-status","f-platform"].forEach(id => {
-    document.getElementById(id).value = "";
-    document.getElementById(id).className = "filter-sel";
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.value = "";
+    el.className = "filter-sel";
   });
-  document.getElementById("btn-clr").style.display = "none";
+  const btnClr = document.getElementById("btn-clr");
+  if (btnClr) btnClr.style.display = "none";
   renderContent();
 }
 function filtered() {
@@ -220,6 +234,7 @@ function renderStats() {
 function populateFilters() {
   [["f-status", STATUSES], ["f-platform", PLATFORMS]].forEach(([id, opts]) => {
     const sel = document.getElementById(id);
+    if (!sel) return;
     const cur = sel.value;
     const label = sel.options[0].text;
     sel.innerHTML = `<option value="">${label}</option>`;
