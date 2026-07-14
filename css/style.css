@@ -402,7 +402,7 @@ body {
 .entry-chip {
   border-radius: 4px;
   padding: 2px 5px;
-  font-size: 10px;
+  font-size: 12px;
   margin-bottom: 2px;
   cursor: pointer;
   display: flex;
