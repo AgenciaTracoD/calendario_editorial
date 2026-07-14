@@ -764,6 +764,7 @@ body {
   font-size: 12px;
   color: var(--color-text-secondary);
   font-style: italic;
+  white-space: pre-wrap;
 }
 
 /* -----------------------------------------------------------
@@ -896,6 +897,7 @@ body {
   line-height: 1.6;
   padding: 6px 0;
   font-family: var(--font-sans);
+  white-space: pre-wrap;
 }
 
 /* -----------------------------------------------------------
@@ -1073,6 +1075,7 @@ body {
   border-radius: var(--border-radius-md);
   padding: 10px 12px;
   font-family: var(--font-sans);
+  white-space: pre-wrap;
 }
 
 .btn-drive {
