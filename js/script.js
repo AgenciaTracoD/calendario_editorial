@@ -41,6 +41,7 @@ const STATUS_STYLE = {
 let year       = new Date().getFullYear();
 let month      = new Date().getMonth();
 let entries    = [];
+let allEntries = [];
 let demands    = [];
 let clientName = "Nome do cliente";
 let view       = "grid";
@@ -52,14 +53,29 @@ let isNewEntry = false;
 let pendingFiles = [];
 let pendingApprovalFiles = [];
 
+/* Multi-cliente (Firebase) */
+let currentClientId = null;
+let clientsList      = [];
+let _unsubEntries = null, _unsubDemands = null, _unsubClient = null;
+
 /* -----------------------------------------------------------
    3. UTILITÁRIOS
    ----------------------------------------------------------- */
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
-function storageKey()        { return `tracod_cal_${year}_${month}`; }
-function storageKeyDemands() { return `tracod_demands`; }
+function slugify(str) {
+  return (str || "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+function getClientIdFromUrl() {
+  const p = new URLSearchParams(window.location.search);
+  return p.get("cliente") || p.get("client") || null;
+}
+function currentMonthEntries() {
+  const ym = `${year}-${String(month + 1).padStart(2, "0")}`;
+  return allEntries.filter(e => e.date && e.date.startsWith(ym));
+}
 
 function fmtDatetime(iso) {
   if (!iso) return "";
@@ -80,24 +96,122 @@ function formatDateSimple(dateStr) {
    4. PERSISTÊNCIA
    ----------------------------------------------------------- */
 function load() {
-  try { const r = localStorage.getItem(storageKey()); entries = r ? JSON.parse(r) : []; } catch(e) { entries = []; }
-  try { const r = localStorage.getItem(storageKeyDemands()); demands = r ? JSON.parse(r) : []; } catch(e) { demands = []; }
-  try {
-    const s = localStorage.getItem("tracod_client");
-    if (s) {
-      clientName = s;
-      document.getElementById("hdr-client").textContent = clientName;
-      document.getElementById("inp-client").value = clientName;
+  if (clientMode) {
+    currentClientId = getClientIdFromUrl();
+    if (!currentClientId) {
+      const c = document.getElementById("content");
+      if (c) c.innerHTML = `<div class="empty-state">
+        <div class="empty-title">Link inválido</div>
+        <div style="font-size:13px">Peça um novo link de acesso à agência.</div>
+      </div>`;
+      return;
     }
-  } catch(e) {}
-  render();
+    attachClientListeners(currentClientId);
+  } else {
+    initClientPicker();
+  }
 }
 
-function save() {
-  try { localStorage.setItem(storageKey(), JSON.stringify(entries)); } catch(e) {}
+/* Conecta os listeners em tempo real do Firestore para um cliente específico */
+function attachClientListeners(clientId) {
+  if (_unsubEntries) _unsubEntries();
+  if (_unsubDemands) _unsubDemands();
+  if (_unsubClient)  _unsubClient();
+
+  currentClientId = clientId;
+
+  _unsubClient = db.collection("clients").doc(clientId).onSnapshot(doc => {
+    const data = doc.data() || {};
+    clientName = data.name || "Nome do cliente";
+    const hdr = document.getElementById("hdr-client"); if (hdr) hdr.textContent = clientName;
+    const inp = document.getElementById("inp-client");  if (inp) inp.value = clientName;
+  }, err => console.error("Erro ao carregar cliente:", err));
+
+  _unsubEntries = db.collection("clients").doc(clientId).collection("entries")
+    .onSnapshot(snap => {
+      allEntries = snap.docs.map(d => d.data());
+      render();
+    }, err => console.error("Erro ao carregar publicações:", err));
+
+  _unsubDemands = db.collection("clients").doc(clientId).collection("demands")
+    .orderBy("createdAt", "desc")
+    .onSnapshot(snap => {
+      demands = snap.docs.map(d => d.data());
+      if (activeTab === "demands") renderDemands();
+      updateDemandBadge();
+    }, err => console.error("Erro ao carregar demandas:", err));
 }
-function saveDemands() {
-  try { localStorage.setItem(storageKeyDemands(), JSON.stringify(demands)); } catch(e) {}
+
+/* Só usado no modo agência: carrega a lista de clientes e permite trocar entre eles */
+async function initClientPicker() {
+  const sel = document.getElementById("client-select");
+  try {
+    const snap = await db.collection("clients").orderBy("name").get();
+    clientsList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    console.error("Erro ao listar clientes:", err);
+    clientsList = [];
+  }
+  if (sel) sel.innerHTML = clientsList.map(c => `<option value="${c.id}">${c.name}</option>`).join("");
+
+  const urlClientId = getClientIdFromUrl();
+  let clientId = (urlClientId && clientsList.find(c => c.id === urlClientId)) ? urlClientId : (clientsList[0] ? clientsList[0].id : null);
+
+  if (!clientId) {
+    clientId = await createNewClientPrompt();
+    if (!clientId) return;
+  }
+  if (sel) sel.value = clientId;
+  switchClient(clientId, false);
+}
+
+function onClientPickerChange(id) { switchClient(id, true); }
+
+function switchClient(clientId, updateUrl) {
+  currentClientId = clientId;
+  if (updateUrl !== false) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("cliente", clientId);
+    history.replaceState(null, "", url);
+  }
+  attachClientListeners(clientId);
+}
+
+async function createNewClientPrompt() {
+  const name = prompt("Nome do novo cliente:");
+  if (!name || !name.trim()) return null;
+  let base = slugify(name) || uid();
+  let id = base, n = 2;
+  try {
+    while ((await db.collection("clients").doc(id).get()).exists) { id = `${base}-${n++}`; }
+    await db.collection("clients").doc(id).set({ name: name.trim() });
+  } catch (err) {
+    alert("Erro ao criar cliente: " + err.message);
+    return null;
+  }
+  clientsList.push({ id, name: name.trim() });
+  const sel = document.getElementById("client-select");
+  if (sel) { sel.innerHTML += `<option value="${id}">${name.trim()}</option>`; sel.value = id; }
+  return id;
+}
+
+async function promptNewClient() {
+  const id = await createNewClientPrompt();
+  if (id) switchClient(id, true);
+}
+
+function copyClientLink() {
+  if (!currentClientId) return;
+  const url  = new URL(window.location.href);
+  const base = url.origin + url.pathname.replace(/agencia\.html$/, "index.html");
+  const link = `${base}?cliente=${currentClientId}`;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(link)
+      .then(() => alert("Link copiado para a área de transferência:\n\n" + link))
+      .catch(() => prompt("Copie o link abaixo:", link));
+  } else {
+    prompt("Copie o link abaixo:", link);
+  }
 }
 
 /* -----------------------------------------------------------
@@ -152,7 +266,7 @@ function navMonth(delta) {
   month += delta;
   if (month < 0)  { month = 11; year--; }
   if (month > 11) { month = 0;  year++; }
-  load();
+  render();
 }
 function setView(v) {
   view = v;
@@ -208,6 +322,7 @@ function filtered() {
    9. RENDERIZAÇÃO
    ----------------------------------------------------------- */
 function render() {
+  entries = currentMonthEntries();
   const ml = document.getElementById("month-label"); if(ml) ml.textContent = `${MONTHS_PT[month]} ${year}`;
   document.getElementById("hdr-client").textContent  = clientName;
   renderStats();
@@ -460,9 +575,9 @@ function handleApprovalFileSelect(input) {
 }
 
 function submitClientApproval() {
-  const id      = document.getElementById("client-approval-modal").dataset.entryId;
-  const idx     = entries.findIndex(e => e.id === id);
-  if (idx < 0) return;
+  const id = document.getElementById("client-approval-modal").dataset.entryId;
+  const e  = allEntries.find(x => x.id === id);
+  if (!e) return;
 
   const approved = document.getElementById("ca-decision-approved").checked;
   const alterar  = document.getElementById("ca-decision-alterar").checked;
@@ -472,6 +587,9 @@ function submitClientApproval() {
     return;
   }
 
+  const history = e.history ? [...e.history] : [];
+  let status;
+
   if (alterar) {
     const text = document.getElementById("ca-alterar-text").value.trim();
     if (!text) {
@@ -479,28 +597,18 @@ function submitClientApproval() {
       alert("Descreva a alteração desejada antes de enviar.");
       return;
     }
-    if (!entries[idx].history) entries[idx].history = [];
-    entries[idx].history.push({
-      action:  "refused",
-      comment: text,
-      files:   pendingApprovalFiles,
-      at:      new Date().toISOString()
-    });
-    entries[idx].status = "Recusado";
+    history.push({ action: "refused", comment: text, files: pendingApprovalFiles, at: new Date().toISOString() });
+    status = "Recusado";
   } else {
-    if (!entries[idx].history) entries[idx].history = [];
-    entries[idx].history.push({
-      action:  "approved",
-      comment: "",
-      files:   [],
-      at:      new Date().toISOString()
-    });
-    entries[idx].status = "Agendado";
+    history.push({ action: "approved", comment: "", files: [], at: new Date().toISOString() });
+    status = "Agendado";
   }
 
-  save();
+  db.collection("clients").doc(currentClientId).collection("entries").doc(id)
+    .update({ history, status })
+    .catch(err => alert("Erro: " + err.message));
+
   closeClientApproval();
-  render();
 }
 
 /* -----------------------------------------------------------
@@ -642,43 +750,49 @@ function saveEntry() {
     reference:    document.getElementById("f-ref").value,
     history:      editEntry.history || []
   };
-  if (isNewEntry) entries.push(entry);
-  else { const i=entries.findIndex(e=>e.id===entry.id); if(i>=0) entries[i]=entry; }
-  save(); closeModal(); render();
+  db.collection("clients").doc(currentClientId).collection("entries").doc(entry.id).set(entry)
+    .catch(err => alert("Erro ao salvar: " + err.message));
+  closeModal();
 }
 
 function deleteEntry() {
   if (!editEntry) return;
-  entries = entries.filter(e=>e.id!==editEntry.id);
-  save(); closeModal(); render();
+  db.collection("clients").doc(currentClientId).collection("entries").doc(editEntry.id).delete()
+    .catch(err => alert("Erro ao excluir: " + err.message));
+  closeModal();
 }
 
 function saveSettings() {
   clientName = document.getElementById("inp-client").value || "Nome do cliente";
-  try { localStorage.setItem("tracod_client", clientName); } catch(e) {}
-  closeSettings(); render();
+  db.collection("clients").doc(currentClientId).set({ name: clientName }, { merge: true })
+    .catch(err => alert("Erro ao salvar: " + err.message));
+  closeSettings();
 }
 
 function inlineApprove() {
-  const id=document.getElementById("modal-approval-actions").dataset.entryId;
-  const obs=document.getElementById("f-obs").value.trim();
-  const idx=entries.findIndex(e=>e.id===id);
-  if(idx<0) return;
-  if(!entries[idx].history) entries[idx].history=[];
-  entries[idx].history.push({action:"approved",comment:obs,at:new Date().toISOString()});
-  entries[idx].status="Agendado";
-  save(); closeModal(); render();
+  const id  = document.getElementById("modal-approval-actions").dataset.entryId;
+  const obs = document.getElementById("f-obs").value.trim();
+  const e   = allEntries.find(x => x.id === id);
+  if (!e) return;
+  const history = e.history ? [...e.history] : [];
+  history.push({ action: "approved", comment: obs, at: new Date().toISOString() });
+  db.collection("clients").doc(currentClientId).collection("entries").doc(id)
+    .update({ history, status: "Agendado" })
+    .catch(err => alert("Erro: " + err.message));
+  closeModal();
 }
 
 function inlineRefuse() {
-  const id=document.getElementById("modal-approval-actions").dataset.entryId;
-  const obs=document.getElementById("f-obs").value.trim();
-  const idx=entries.findIndex(e=>e.id===id);
-  if(idx<0) return;
-  if(!entries[idx].history) entries[idx].history=[];
-  entries[idx].history.push({action:"refused",comment:obs,at:new Date().toISOString()});
-  entries[idx].status="Recusado";
-  save(); closeModal(); render();
+  const id  = document.getElementById("modal-approval-actions").dataset.entryId;
+  const obs = document.getElementById("f-obs").value.trim();
+  const e   = allEntries.find(x => x.id === id);
+  if (!e) return;
+  const history = e.history ? [...e.history] : [];
+  history.push({ action: "refused", comment: obs, at: new Date().toISOString() });
+  db.collection("clients").doc(currentClientId).collection("entries").doc(id)
+    .update({ history, status: "Recusado" })
+    .catch(err => alert("Erro: " + err.message));
+  closeModal();
 }
 
 /* -----------------------------------------------------------
@@ -740,7 +854,9 @@ function submitDemand() {
     createdAt:   new Date().toISOString(),
     agencyNotes: ""
   };
-  demands.unshift(demand); saveDemands(); closeDemandModal(); renderDemands(); updateDemandBadge();
+  db.collection("clients").doc(currentClientId).collection("demands").doc(demand.id).set(demand)
+    .catch(err => alert("Erro ao enviar demanda: " + err.message));
+  closeDemandModal();
 }
 
 function openDemandDetail(id) {
@@ -775,12 +891,13 @@ function openDemandDetail(id) {
 function closeDemandDetail() { document.getElementById("demand-detail-modal").style.display="none"; }
 
 function saveDemandDetail() {
-  const id=document.getElementById("demand-detail-modal").dataset.demandId;
-  const idx=demands.findIndex(d=>d.id===id);
-  if(idx<0) return;
-  demands[idx].status=document.getElementById("dd-status-sel").value;
-  demands[idx].agencyNotes=document.getElementById("dd-agency-notes").value.trim();
-  saveDemands(); closeDemandDetail(); renderDemands(); updateDemandBadge();
+  const id = document.getElementById("demand-detail-modal").dataset.demandId;
+  const status      = document.getElementById("dd-status-sel").value;
+  const agencyNotes = document.getElementById("dd-agency-notes").value.trim();
+  db.collection("clients").doc(currentClientId).collection("demands").doc(id)
+    .update({ status, agencyNotes })
+    .catch(err => alert("Erro: " + err.message));
+  closeDemandDetail();
 }
 
 function renderDemands() {
