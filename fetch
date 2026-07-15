@@ -1,0 +1,31 @@
+// Função para enviar os dados para o Make
+async function enviarDemandaParaOMake(dadosDemanda) {
+  const webhookUrl = "SUA_URL_DO_WEBHOOK_DO_MAKE_AQUI"; // Cole a URL que você copiou no Passo 1
+
+  try {
+    const response = await fetch(webhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        cliente: dadosDemanda.clienteId, // ou nome do cliente
+        tema: dadosDemanda.tema,
+        data: dadosDemanda.data,
+        plataforma: dadosDemanda.plataforma,
+        formato: dadosDemanda.formato,
+        observacoes: dadosDemanda.observacoes,
+        referencia: dadosDemanda.referencia,
+        linkDrive: dadosDemanda.linkDrive
+      })
+    });
+
+    if (response.ok) {
+      console.log("Demanda enviada com sucesso para a fila de automação!");
+    } else {
+      console.error("Erro ao enviar para o webhook:", response.statusText);
+    }
+  } catch (error) {
+    console.error("Erro na requisição para o webhook:", error);
+  }
+}
