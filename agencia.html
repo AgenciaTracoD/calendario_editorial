@@ -31,14 +31,17 @@
   </div>
 
   <div class="tabs-bar">
-    <button class="tab-btn on" id="tab-calendar" onclick="setTab('calendar')">
-      <i class="ti ti-calendar" aria-hidden="true"></i> Calendário
-    </button>
-    <button class="tab-btn" id="tab-demands" onclick="setTab('demands')">
-      <i class="ti ti-inbox" aria-hidden="true"></i> Demandas
-      <span class="demand-badge" id="demand-badge" style="display:none">0</span>
-    </button>
-  </div>
+  <button class="tab-btn on" id="tab-calendar" onclick="setTab('calendar')">
+    <i class="ti ti-calendar" aria-hidden="true"></i> Calendário
+  </button>
+  <button class="tab-btn" id="tab-demands" onclick="setTab('demands')">
+    <i class="ti ti-inbox" aria-hidden="true"></i> Demandas
+    <span class="demand-badge" id="demand-badge" style="display:none">0</span>
+  </button>
+  <button class="tab-btn" id="tab-reports" onclick="setTab('reports')">
+    <i class="ti ti-chart-bar" aria-hidden="true"></i> Relatório Mensal
+  </button>
+</div>
 
   <div id="section-calendar">
     <div id="filters-bar">
@@ -65,12 +68,16 @@
     <div class="content" id="content"></div>
   </div>
 
-  <div id="section-demands" style="display:none">
-    <div class="demands-header">
-      <div>
-        <div class="demands-title">Demandas do cliente</div>
-        <div class="demands-subtitle">Pedidos recebidos dos clientes</div>
-      </div>
+ <div id="section-reports" style="display:none; padding: 20px;">
+  <div class="demands-header" style="margin-bottom: 20px;">
+    <div>
+      <div class="demands-title">Performance Estratégica</div>
+      <div class="demands-subtitle">Visão geral dos conteúdos e entregas deste mês</div>
+    </div>
+  </div>
+  
+  <div id="reports-content"></div>
+</div>
     </div>
     <div class="content">
       <div id="demands-list"></div>
