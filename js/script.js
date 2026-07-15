@@ -138,6 +138,7 @@ function attachClientListeners(clientId) {
     .onSnapshot(snap => {
       demands = snap.docs.map(d => d.data());
       if (activeTab === "demands") renderDemands();
+      if (activeTab === "reports") renderReports();
       updateDemandBadge();
     }, err => console.error("Erro ao carregar demandas:", err));
 }
@@ -254,22 +255,23 @@ function toggleClientMode() {
 }
 
 /* -----------------------------------------------------------
-   6. ABAS
+   6. ABAS (CORRIGIDO PARA RECONHECER O RELATÓRIO)
    ----------------------------------------------------------- */
 function setTab(tab) {
   activeTab = tab;
   
-  // Atualiza classes dos botões
   document.getElementById("tab-calendar").className = "tab-btn" + (tab === "calendar" ? " on" : "");
   document.getElementById("tab-demands").className  = "tab-btn" + (tab === "demands"  ? " on" : "");
-  document.getElementById("tab-reports").className  = "tab-btn" + (tab === "reports"  ? " on" : "");
   
-  // Alterna visibilidade das seções
+  const reportTab = document.getElementById("tab-reports");
+  if (reportTab) reportTab.className = "tab-btn" + (tab === "reports" ? " on" : "");
+  
   document.getElementById("section-calendar").style.display = tab === "calendar" ? "" : "none";
   document.getElementById("section-demands").style.display  = tab === "demands"  ? "" : "none";
-  document.getElementById("section-reports").style.display  = tab === "reports"  ? "" : "none";
   
-  // Renderiza o conteúdo da aba ativa
+  const reportSec = document.getElementById("section-reports");
+  if (reportSec) reportSec.style.display = tab === "reports" ? "" : "none";
+  
   if (tab === "demands") renderDemands();
   if (tab === "reports") renderReports();
 }
@@ -327,8 +329,6 @@ function filtered() {
   return entries.filter(e => {
     if (filter.status   && e.status   !== filter.status)   return false;
     if (filter.platform && e.platform !== filter.platform) return false;
-    // Modo cliente: mostra TODAS as peças (cliente vê o calendário completo)
-    
     return true;
   }).sort((a,b) => a.date.localeCompare(b.date));
 }
@@ -344,8 +344,6 @@ function render() {
   renderContent();
   populateFilters();
   updateDemandBadge();
-  
-  // ADICIONE ESTA LINHA AQUI NO FIM:
   if (activeTab === "reports") renderReports();
 }
 
@@ -411,7 +409,6 @@ function renderGrid() {
     const isToday = isCurrentMonth && day === todayDate;
     const de      = dayEntries[day] || [];
 
-    // No modo cliente, célula não abre modal de adicionar
     const cellClick = clientMode ? "" : `onclick="openAdd(${day})"`;
     html += `<div class="cal-cell${clientMode ? " client-cell" : ""}" ${cellClick}>`;
     html += isToday ? `<div class="cal-day today">${day}</div>` : `<div class="cal-day">${day}</div>`;
@@ -421,7 +418,6 @@ function renderGrid() {
       const icon = PLAT_ICON[e.platform]  || "ti-calendar";
       const clickFn = clientMode ? `openClientApproval('${e.id}')` : `openEdit('${e.id}')`;
 
-      // Define o emoji de status correspondente
       let statusEmoji = "📝";
       const statusLower = (e.status || "").toLowerCase();
       if (statusLower === "publicado") {
@@ -429,7 +425,7 @@ function renderGrid() {
       } else if (statusLower === "agendado") {
         statusEmoji = "📅";
       } else if (statusLower === "aprovação") {
-        statusEmoji = "✋🏻";
+        statusEmoji = "✋";
       } else if (statusLower === "criação") {
         statusEmoji = "🎨";
       } else if (statusLower === "recusado") {
@@ -453,7 +449,6 @@ function renderGrid() {
 
   html += `</div>`;
 
-  // Mensagem especial no modo cliente se não houver nada para aprovar
   if (clientMode && filtered().length === 0) {
     document.getElementById("content").innerHTML = `<div class="empty-state">
       <div class="empty-icon"><i class="ti ti-circle-check" aria-hidden="true" style="font-size:40px;color:var(--color-text-tertiary)"></i></div>
@@ -472,12 +467,8 @@ function renderGrid() {
 function renderList() {
   const fe = filtered();
   if (fe.length === 0) {
-    const msg = clientMode
-      ? "Nenhuma peça aguardando aprovação"
-      : "Nenhuma publicação encontrada";
-    const sub = clientMode
-      ? "Quando a agência enviar criativos para revisão, eles aparecerão aqui"
-      : 'Clique em "Adicionar" para começar o planejamento';
+    const msg = clientMode ? "Nenhuma peça aguardando aprovação" : "Nenhuma publicação encontrada";
+    const sub = clientMode ? "Quando a agência enviar criativos para revisão, eles aparecerão aqui" : 'Clique em "Adicionar" para começar o planejamento';
     document.getElementById("content").innerHTML = `<div class="empty-state">
       <div class="empty-icon"><i class="ti ti-calendar" aria-hidden="true" style="font-size:40px;color:var(--color-text-tertiary)"></i></div>
       <div class="empty-title">${msg}</div>
@@ -532,14 +523,12 @@ function openClientApproval(id) {
 
   pendingApprovalFiles = [];
 
-  // Preenche dados da peça
   document.getElementById("ca-theme").textContent    = e.theme || "(sem tema)";
   document.getElementById("ca-platform").textContent = e.platform;
   document.getElementById("ca-format").textContent   = e.format;
   document.getElementById("ca-date").textContent     = formatDateSimple(e.date);
   document.getElementById("ca-obs").textContent      = e.observations || "Nenhuma observação.";
 
-  // Link do drive
   const driveWrap = document.getElementById("ca-drive-wrap");
   if (e.driveLink) {
     driveWrap.style.display = "";
@@ -550,7 +539,6 @@ function openClientApproval(id) {
     driveWrap.style.display = "none";
   }
 
-  // Histórico
   const histWrap = document.getElementById("ca-history-wrap");
   if (e.history && e.history.length > 0) {
     histWrap.style.display = "";
@@ -566,7 +554,6 @@ function openClientApproval(id) {
     histWrap.style.display = "none";
   }
 
-  // Reset do formulário
   document.getElementById("ca-decision-approved").checked = false;
   document.getElementById("ca-decision-alterar").checked  = false;
   document.getElementById("ca-alterar-wrap").style.display = "none";
@@ -879,7 +866,7 @@ function openDemandModal() {
 }
 function closeDemandModal() { document.getElementById("demand-form-modal").style.display="none"; pendingFiles=[]; }
 
-/* EXCLUSÃO DE DEMANDA (NOVA FUNÇÃO) */
+/* EXCLUSÃO DE DEMANDA */
 function deleteDemand() {
   const id = document.getElementById("demand-detail-modal").dataset.demandId;
   if (!id) return;
@@ -981,94 +968,12 @@ function renderDemands() {
 }
 
 /* -----------------------------------------------------------
-   17. INICIALIZAÇÃO
-   ----------------------------------------------------------- */
-document.addEventListener("DOMContentLoaded", load);
-
-/* PAGE_MODE já define o modo ao carregar — toggleClientMode desabilitada */
-function toggleClientMode() {}
-
-/* Sobrescreve openDemandDetail para suportar modo cliente (readonly) e agência (editável) */
-const _openDemandDetail = openDemandDetail;
-function openDemandDetail(id) {
-  const d = demands.find(x => x.id === id);
-  if (!d) return;
-
-  document.getElementById("dd-title").textContent       = d.title;
-  document.getElementById("dd-type").textContent        = d.type;
-  document.getElementById("dd-created").textContent     = fmtDatetime(d.createdAt);
-  document.getElementById("dd-description").textContent = d.description || "Sem descrição.";
-  document.getElementById("dd-deadline").textContent    = d.deadline ? formatDateSimple(d.deadline) : "Não informado";
-
-  const rw = document.getElementById("dd-ref-wrap");
-  if (rw) { rw.style.display = d.reference ? "" : "none"; }
-  if (d.reference) {
-    const a = document.getElementById("dd-ref-link");
-    if (a) { a.href = d.reference; a.textContent = d.reference; }
-  }
-
-  const fw = document.getElementById("dd-files-wrap");
-  if (fw) {
-    if (d.files && d.files.length > 0) {
-      fw.style.display = "";
-      document.getElementById("dd-files-list").innerHTML = d.files.map(f => {
-        const isImage = f.type && f.type.startsWith("image/");
-        const isPDF   = f.type === "application/pdf";
-        const icon    = isPDF ? "ti-file-type-pdf" : isImage ? "ti-photo" : "ti-file";
-        return `<div class="file-chip-detail">
-          ${isImage ? `<img src="${f.data}" class="file-preview-img">` : ""}
-          <div style="display:flex;align-items:center;gap:6px;margin-top:${isImage?"6px":"0"}">
-            <i class="ti ${icon}" aria-hidden="true"></i>
-            <a href="${f.data}" download="${f.name}" style="font-size:12px;color:#3b82f6">${f.name}</a>
-          </div></div>`;
-      }).join("");
-    } else { fw.style.display = "none"; }
-  }
-
-  // Status — agência edita, cliente vê
-  const sel     = document.getElementById("dd-status-sel");
-  const display = document.getElementById("dd-status-display");
-  
-  // Esconde ou exibe o botão de Excluir com base no modo (cliente não exclui demanda)
-  const btnDel = document.getElementById("btn-del-demand");
-  if (btnDel) {
-    btnDel.style.display = clientMode ? "none" : "";
-  }
-
-  if (sel && sel.style.display !== "none") {
-    sel.innerHTML = DEMAND_STATUSES.map(s => `<option${s === d.status ? " selected" : ""}>${s}</option>`).join("");
-  }
-  if (display) {
-    const st = DEMAND_STATUS_STYLE[d.status] || DEMAND_STATUS_STYLE["Novo"];
-    display.innerHTML = `<span class="status-pill" style="background:${st.bg};color:${st.text};border:0.5px solid ${st.border}">${d.status}</span>`;
-  }
-
-  // Notas da agência — agência edita, cliente vê (readonly)
-  const notesTA      = document.getElementById("dd-agency-notes");
-  const notesDisplay = document.getElementById("dd-agency-notes-display");
-  const notesWrap    = document.getElementById("dd-notes-wrap");
-  if (notesTA && notesTA.style.display !== "none") {
-    notesTA.value = d.agencyNotes || "";
-  }
-  if (notesDisplay) {
-    notesDisplay.textContent = d.agencyNotes || "";
-  }
-  if (notesWrap) {
-    notesWrap.style.display = d.agencyNotes ? "" : "none";
-  }
-
-  document.getElementById("demand-detail-modal").style.display    = "flex";
-  document.getElementById("demand-detail-modal").dataset.demandId = id;
-}
-
-/* -----------------------------------------------------------
-   16b. RENDERIZAÇÃO DO RELATÓRIO MENSAL
+   16b. RENDERIZAÇÃO DO RELATÓRIO MENSAL (DASHBOARD)
    ----------------------------------------------------------- */
 function renderReports() {
   const container = document.getElementById("reports-content");
   if (!container) return;
 
-  // Usa as publicações já filtradas do mês atual
   const totalPosts = entries.length;
 
   if (totalPosts === 0) {
@@ -1080,14 +985,11 @@ function renderReports() {
     return;
   }
 
-  // Contadores estratégicos
   const publicados = entries.filter(e => (e.status || "").toLowerCase() === "publicado").length;
   const agendados = entries.filter(e => (e.status || "").toLowerCase() === "agendado").length;
   const taxaConclusao = totalPosts > 0 ? Math.round(((publicados + agendados) / totalPosts) * 100) : 0;
 
-  // Agrupamento por Plataforma
   const platContagem = {};
-  // Agrupamento por Formato
   const formContagem = {};
 
   entries.forEach(e => {
@@ -1095,25 +997,20 @@ function renderReports() {
     if (e.format) formContagem[e.format] = (formContagem[e.format] || 0) + 1;
   });
 
-  // Montando o HTML do Dashboard (Estilo Cards e Barras de Progresso inline)
   let html = `
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
-      
       <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff;">
         <div style="color: #9ca3af; font-size: 12px; font-weight: 500; text-transform: uppercase; margin-bottom: 4px;">Volume Planejado</div>
         <div style="font-size: 28px; font-weight: 700;">${totalPosts} <span style="font-size: 14px; font-weight: 400; color: #9ca3af;">peças</span></div>
       </div>
-
       <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff;">
         <div style="color: #10b981; font-size: 12px; font-weight: 500; text-transform: uppercase; margin-bottom: 4px;">Entregues / Publicados</div>
         <div style="font-size: 28px; font-weight: 700; color: #10b981;">${publicados} <span style="font-size: 14px; font-weight: 400; color: #a7f3d0;">posts</span></div>
       </div>
-
       <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff;">
         <div style="color: #3b82f6; font-size: 12px; font-weight: 500; text-transform: uppercase; margin-bottom: 4px;">Agendados / Prontos</div>
         <div style="font-size: 28px; font-weight: 700; color: #3b82f6;">${agendados} <span style="font-size: 14px; font-weight: 400; color: #bfdbfe;">posts</span></div>
       </div>
-
       <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff;">
         <div style="color: #f59e0b; font-size: 12px; font-weight: 500; text-transform: uppercase; margin-bottom: 4px;">Índice de Conclusão</div>
         <div style="font-size: 28px; font-weight: 700; color: #f59e0b;">${taxaConclusao}%</div>
@@ -1121,11 +1018,9 @@ function renderReports() {
           <div style="background: #f59e0b; width: ${taxaConclusao}%; height: 100%;"></div>
         </div>
       </div>
-
     </div>
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
-      
       <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff;">
         <h4 style="margin: 0 0 16px 0; font-size: 14px; font-weight: 600; color: #e5e7eb;">Distribuição por Canal</h4>
         <div style="display: flex; flex-direction: column; gap: 12px;">
@@ -1163,9 +1058,15 @@ function renderReports() {
           }).join('')}
         </div>
       </div>
-
     </div>
   `;
 
   container.innerHTML = html;
 }
+
+/* -----------------------------------------------------------
+   17. INICIALIZAÇÃO
+   ----------------------------------------------------------- */
+document.addEventListener("DOMContentLoaded", load);
+
+function toggleClientMode() {}
