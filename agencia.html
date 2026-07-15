@@ -13,7 +13,6 @@
 
 <div id="app">
 
-  <!-- CABEÇALHO -->
   <div class="cabecalho">
     <div class="logo">
       <video class="logomotion" src="media/LogoTracoD.mp4" autoplay muted loop playsinline></video>
@@ -31,7 +30,6 @@
     </div>
   </div>
 
-  <!-- ABAS -->
   <div class="tabs-bar">
     <button class="tab-btn on" id="tab-calendar" onclick="setTab('calendar')">
       <i class="ti ti-calendar" aria-hidden="true"></i> Calendário
@@ -42,7 +40,6 @@
     </button>
   </div>
 
-  <!-- SEÇÃO: CALENDÁRIO -->
   <div id="section-calendar">
     <div id="filters-bar">
       <div class="nav-bar">
@@ -68,7 +65,6 @@
     <div class="content" id="content"></div>
   </div>
 
-  <!-- SEÇÃO: DEMANDAS -->
   <div id="section-demands" style="display:none">
     <div class="demands-header">
       <div>
@@ -84,7 +80,6 @@
 </div>
 
 
-<!-- MODAL: ADICIONAR / EDITAR PUBLICAÇÃO -->
 <div class="modal-overlay" id="modal" style="display:none">
   <div class="modal">
     <div class="modal-head">
@@ -113,7 +108,6 @@
 </div>
 
 
-<!-- MODAL: CONFIGURAÇÕES -->
 <div class="modal-overlay" id="settings-modal" style="display:none">
   <div class="modal" style="max-width:360px">
     <div class="modal-head">
@@ -137,7 +131,6 @@
 </div>
 
 
-<!-- MODAL: DETALHE DA DEMANDA (agência edita status e notas) -->
 <div class="modal-overlay" id="demand-detail-modal" style="display:none">
   <div class="modal" style="max-width:500px">
     <div class="modal-head">
@@ -180,7 +173,11 @@
       <div id="dd-notes-wrap" style="display:none"></div>
     </div>
     <div class="modal-foot">
-      <div></div>
+      <div>
+        <button id="btn-del-demand" class="btn-del" onclick="deleteDemand()" style="background:#ef4444; color:#fff; border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:6px;">
+          <i class="ti ti-trash" aria-hidden="true"></i> Excluir Demanda
+        </button>
+      </div>
       <div style="display:flex;gap:8px">
         <button class="btn-cancel" onclick="closeDemandDetail()">Fechar</button>
         <button class="btn-save"   onclick="saveDemandDetail()">Salvar</button>
@@ -189,7 +186,6 @@
   </div>
 </div>
 
-<!-- Modais de aprovação e demanda do cliente não existem aqui -->
 <div id="client-approval-modal" style="display:none"></div>
 <div id="demand-form-modal"     style="display:none"></div>
 
