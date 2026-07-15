@@ -258,11 +258,20 @@ function toggleClientMode() {
    ----------------------------------------------------------- */
 function setTab(tab) {
   activeTab = tab;
+  
+  // Atualiza classes dos botões
   document.getElementById("tab-calendar").className = "tab-btn" + (tab === "calendar" ? " on" : "");
   document.getElementById("tab-demands").className  = "tab-btn" + (tab === "demands"  ? " on" : "");
+  document.getElementById("tab-reports").className  = "tab-btn" + (tab === "reports"  ? " on" : "");
+  
+  // Alterna visibilidade das seções
   document.getElementById("section-calendar").style.display = tab === "calendar" ? "" : "none";
   document.getElementById("section-demands").style.display  = tab === "demands"  ? "" : "none";
+  document.getElementById("section-reports").style.display  = tab === "reports"  ? "" : "none";
+  
+  // Renderiza o conteúdo da aba ativa
   if (tab === "demands") renderDemands();
+  if (tab === "reports") renderReports();
 }
 
 /* -----------------------------------------------------------
