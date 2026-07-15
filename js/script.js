@@ -408,9 +408,30 @@ function renderGrid() {
       const st   = STATUS_STYLE[e.status] || STATUS_STYLE.Planejado;
       const icon = PLAT_ICON[e.platform]  || "ti-calendar";
       const clickFn = clientMode ? `openClientApproval('${e.id}')` : `openEdit('${e.id}')`;
-      html += `<div class="entry-chip${clientMode ? " client-chip" : ""}" style="background:${st.bg};border:0.5px solid ${st.border};color:${st.text}" onclick="event.stopPropagation();${clickFn}">
+
+      // Define o emoji de status correspondente
+      let statusEmoji = "📝";
+      const statusLower = (e.status || "").toLowerCase();
+      if (statusLower === "publicado") {
+        statusEmoji = "✅";
+      } else if (statusLower === "agendado") {
+        statusEmoji = "📅";
+      } else if (statusLower === "aprovação") {
+        statusEmoji = "👍🏻";
+      } else if (statusLower === "criação") {
+        statusEmoji = "🎨";
+      } else if (statusLower === "recusado") {
+        statusEmoji = "❌";
+      } else if (statusLower === "cancelado") {
+        statusEmoji = "🚫";
+      } else if (statusLower === "pausado") {
+        statusEmoji = "⏸️";
+      }
+
+      html += `<div class="entry-chip${clientMode ? " client-chip" : ""}" style="background:${st.bg};border:0.5px solid ${st.border};color:${st.text}; display: flex; align-items: center; gap: 4px;" onclick="event.stopPropagation();${clickFn}">
         <i class="ti ${icon}" aria-hidden="true" style="font-size:10px;flex-shrink:0"></i>
-        <span class="chip-text">${e.theme || e.format}</span>
+        <span style="font-size:11px; flex-shrink:0;">${statusEmoji}</span>
+        <span class="chip-text" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-grow: 1;">${e.theme || e.format}</span>
         ${clientMode ? `<i class="ti ti-chevron-right" aria-hidden="true" style="font-size:9px;margin-left:auto;flex-shrink:0"></i>` : ""}
       </div>`;
     });
@@ -707,11 +728,11 @@ function openAdd(day) {
   editEntry = { id:uid(), date:dateStr, platform:"Instagram", format:"Feed", theme:"", status:"Planejado", observations:"", reference:"", driveLink:"", history:[] };
   document.getElementById("modal-title").textContent              = "Nova publicação";
   document.getElementById("modal-body").innerHTML                 = buildForm(editEntry);
-  document.getElementById("modal-del-wrap").innerHTML             = "";
+  document.getElementById("modal-del-wrap").innerHTML              = "";
   document.getElementById("btn-save").textContent                 = "Adicionar";
   document.getElementById("btn-save").disabled                    = false;
   document.getElementById("modal-approval-actions").style.display = "none";
-  document.getElementById("modal").style.display                  = "flex";
+  document.getElementById("modal").style.display                   = "flex";
 }
 
 function openEdit(id) {
