@@ -177,13 +177,19 @@ function switchClient(clientId, updateUrl) {
   attachClientListeners(clientId);
 }
 
+function randomClientId() {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let out = "";
+  for (let i = 0; i < 14; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
+
 async function createNewClientPrompt() {
   const name = prompt("Nome do novo cliente:");
   if (!name || !name.trim()) return null;
-  let base = slugify(name) || uid();
-  let id = base, n = 2;
+  let id = randomClientId();
   try {
-    while ((await db.collection("clients").doc(id).get()).exists) { id = `${base}-${n++}`; }
+    while ((await db.collection("clients").doc(id).get()).exists) { id = randomClientId(); }
     await db.collection("clients").doc(id).set({ name: name.trim() });
   } catch (err) {
     alert("Erro ao criar cliente: " + err.message);
