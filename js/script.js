@@ -417,7 +417,7 @@ function renderGrid() {
       } else if (statusLower === "agendado") {
         statusEmoji = "📅";
       } else if (statusLower === "aprovação") {
-        statusEmoji = "👍🏻";
+        statusEmoji = "✋";
       } else if (statusLower === "criação") {
         statusEmoji = "🎨";
       } else if (statusLower === "recusado") {
@@ -867,6 +867,20 @@ function openDemandModal() {
 }
 function closeDemandModal() { document.getElementById("demand-form-modal").style.display="none"; pendingFiles=[]; }
 
+/* EXCLUSÃO DE DEMANDA (NOVA FUNÇÃO) */
+function deleteDemand() {
+  const id = document.getElementById("demand-detail-modal").dataset.demandId;
+  if (!id) return;
+  
+  if (confirm("Tem certeza que deseja excluir esta demanda definitivamente? Essa ação não pode ser desfeita.")) {
+    db.collection("clients").doc(currentClientId).collection("demands").doc(id).delete()
+      .then(() => {
+        closeDemandDetail();
+      })
+      .catch(err => alert("Erro ao excluir demanda: " + err.message));
+  }
+}
+
 function submitDemand() {
   const title=document.getElementById("df-title").value.trim();
   if(!title){document.getElementById("df-title").focus();return;}
@@ -1002,6 +1016,13 @@ function openDemandDetail(id) {
   // Status — agência edita, cliente vê
   const sel     = document.getElementById("dd-status-sel");
   const display = document.getElementById("dd-status-display");
+  
+  // Esconde ou exibe o botão de Excluir com base no modo (cliente não exclui demanda)
+  const btnDel = document.getElementById("btn-del-demand");
+  if (btnDel) {
+    btnDel.style.display = clientMode ? "none" : "";
+  }
+
   if (sel && sel.style.display !== "none") {
     sel.innerHTML = DEMAND_STATUSES.map(s => `<option${s === d.status ? " selected" : ""}>${s}</option>`).join("");
   }
