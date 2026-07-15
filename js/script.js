@@ -344,6 +344,9 @@ function render() {
   renderContent();
   populateFilters();
   updateDemandBadge();
+  
+  // ADICIONE ESTA LINHA AQUI NO FIM:
+  if (activeTab === "reports") renderReports();
 }
 
 function renderStats() {
@@ -1056,4 +1059,113 @@ function openDemandDetail(id) {
 
   document.getElementById("demand-detail-modal").style.display    = "flex";
   document.getElementById("demand-detail-modal").dataset.demandId = id;
+}
+
+/* -----------------------------------------------------------
+   16b. RENDERIZAÇÃO DO RELATÓRIO MENSAL
+   ----------------------------------------------------------- */
+function renderReports() {
+  const container = document.getElementById("reports-content");
+  if (!container) return;
+
+  // Usa as publicações já filtradas do mês atual
+  const totalPosts = entries.length;
+
+  if (totalPosts === 0) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="empty-icon"><i class="ti ti-chart-donut" aria-hidden="true" style="font-size:40px;color:var(--color-text-tertiary)"></i></div>
+      <div class="empty-title">Sem dados para este mês</div>
+      <div style="font-size:13px">Planeje ou publique posts neste mês para gerar o relatório estatístico.</div>
+    </div>`;
+    return;
+  }
+
+  // Contadores estratégicos
+  const publicados = entries.filter(e => (e.status || "").toLowerCase() === "publicado").length;
+  const agendados = entries.filter(e => (e.status || "").toLowerCase() === "agendado").length;
+  const taxaConclusao = totalPosts > 0 ? Math.round(((publicados + agendados) / totalPosts) * 100) : 0;
+
+  // Agrupamento por Plataforma
+  const platContagem = {};
+  // Agrupamento por Formato
+  const formContagem = {};
+
+  entries.forEach(e => {
+    if (e.platform) platContagem[e.platform] = (platContagem[e.platform] || 0) + 1;
+    if (e.format) formContagem[e.format] = (formContagem[e.format] || 0) + 1;
+  });
+
+  // Montando o HTML do Dashboard (Estilo Cards e Barras de Progresso inline)
+  let html = `
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+      
+      <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff;">
+        <div style="color: #9ca3af; font-size: 12px; font-weight: 500; text-transform: uppercase; margin-bottom: 4px;">Volume Planejado</div>
+        <div style="font-size: 28px; font-weight: 700;">${totalPosts} <span style="font-size: 14px; font-weight: 400; color: #9ca3af;">peças</span></div>
+      </div>
+
+      <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff;">
+        <div style="color: #10b981; font-size: 12px; font-weight: 500; text-transform: uppercase; margin-bottom: 4px;">Entregues / Publicados</div>
+        <div style="font-size: 28px; font-weight: 700; color: #10b981;">${publicados} <span style="font-size: 14px; font-weight: 400; color: #a7f3d0;">posts</span></div>
+      </div>
+
+      <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff;">
+        <div style="color: #3b82f6; font-size: 12px; font-weight: 500; text-transform: uppercase; margin-bottom: 4px;">Agendados / Prontos</div>
+        <div style="font-size: 28px; font-weight: 700; color: #3b82f6;">${agendados} <span style="font-size: 14px; font-weight: 400; color: #bfdbfe;">posts</span></div>
+      </div>
+
+      <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff;">
+        <div style="color: #f59e0b; font-size: 12px; font-weight: 500; text-transform: uppercase; margin-bottom: 4px;">Índice de Conclusão</div>
+        <div style="font-size: 28px; font-weight: 700; color: #f59e0b;">${taxaConclusao}%</div>
+        <div style="background: #2d2d35; height: 6px; border-radius: 3px; margin-top: 8px; overflow: hidden;">
+          <div style="background: #f59e0b; width: ${taxaConclusao}%; height: 100%;"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+      
+      <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff;">
+        <h4 style="margin: 0 0 16px 0; font-size: 14px; font-weight: 600; color: #e5e7eb;">Distribuição por Canal</h4>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          ${Object.entries(platContagem).map(([plat, qtd]) => {
+            const pct = Math.round((qtd / totalPosts) * 100);
+            return `
+              <div>
+                <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px;">
+                  <span>${plat}</span>
+                  <span style="font-weight: 600;">${qtd} (${pct}%)</span>
+                </div>
+                <div style="background: #2d2d35; height: 8px; border-radius: 4px; overflow: hidden;">
+                  <div style="background: #3b82f6; width: ${pct}%; height: 100%;"></div>
+                </div>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff;">
+        <h4 style="margin: 0 0 16px 0; font-size: 14px; font-weight: 600; color: #e5e7eb;">Formatos Utilizados</h4>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          ${Object.entries(formContagem).map(([form, qtd]) => {
+            const pct = Math.round((qtd / totalPosts) * 100);
+            return `
+              <div>
+                <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px;">
+                  <span>${form}</span>
+                  <span style="font-weight: 600;">${qtd} (${pct}%)</span>
+                </div>
+                <div style="background: #2d2d35; height: 8px; border-radius: 4px; overflow: hidden;">
+                  <div style="background: #10b981; width: ${pct}%; height: 100%;"></div>
+                </div>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+    </div>
+  `;
+
+  container.innerHTML = html;
 }
