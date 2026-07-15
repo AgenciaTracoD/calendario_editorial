@@ -417,7 +417,7 @@ function renderGrid() {
       } else if (statusLower === "agendado") {
         statusEmoji = "📅";
       } else if (statusLower === "aprovação") {
-        statusEmoji = "✋";
+        statusEmoji = "👍🏻";
       } else if (statusLower === "criação") {
         statusEmoji = "🎨";
       } else if (statusLower === "recusado") {
