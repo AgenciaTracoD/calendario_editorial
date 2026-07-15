@@ -21,7 +21,7 @@ function renderizarPostsNoCalendario(postsDoMes) {
         statusClass = 'status-agendado'; // Ex: Fundo Azul
         break;
       case 'aprovacao':
-        iconStatus = '✋'; // Ícone de Mãozinha levantada (esperando aprovação)
+        iconStatus = '👍🏻'; // Ícone de Mãozinha levantada (esperando aprovação)
         statusClass = 'status-aprovacao'; // Ex: Fundo Amarelo
         break;
       case 'criacao':
