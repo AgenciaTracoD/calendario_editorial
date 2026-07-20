@@ -982,19 +982,39 @@ async function renderReports() {
   } catch(e) { container.innerHTML = "Erro ao carregar dados."; }
 }
 
-/* --- 16c. RENDERIZAÇÃO TRÁFEGO PAGO (PLANILHA) --- */
+/* --- 16c. RENDERIZAÇÃO TRÁFEGO PAGO (PLANILHA MELHORADA) --- */
 async function renderAds() {
   const container = document.getElementById("ads-content");
   if (!container) return;
+
+  container.innerHTML = "Carregando dados do tráfego...";
+
   const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTgn9xilq94Z8fjr1HB168n1dcybNReZg8D7_xZbHLc1P_vpZ2quah2ZlQAdWKXUJGnc1byXttqyeVz/pub?output=csv";
+  
   try {
     const res = await fetch(csvUrl);
     const data = await res.text();
     const rows = data.split("\n").map(r => r.split(","));
     const cid = getClientIdFromUrl();
-    const r = rows.find(row => row[0].trim() === cid);
-    container.innerHTML = r ? `<div style="padding:20px;"><h3>Dados de Campanha</h3><p>Investimento: R$ ${r[2]}</p><p>Conversas: ${r[3]}</p></div>` : "Nenhuma campanha encontrada.";
-  } catch(e) { container.innerHTML = "Erro ao carregar dados."; }
+
+    // Filtra as linhas que correspondem ao ID do cliente (ignorando cabeçalho)
+    const registros = rows.filter(row => row[0] && row[0].trim() === cid);
+
+    if (registros.length > 0) {
+      // Cria uma lista de cards caso haja mais de um registro para o cliente
+      container.innerHTML = registros.map(r => `
+        <div style="background: #1e1e24; margin-bottom:10px; padding:20px; border-radius:8px; color:#fff;">
+          <h3>Campanha de Tráfego</h3>
+          <p>Investimento: <strong>R$ ${r[2] || "0,00"}</strong></p>
+          <p>Conversas: <strong>${r[3] || "0"}</strong></p>
+        </div>`).join("");
+    } else {
+      container.innerHTML = `<div style="padding:20px; color:#9ca3af;">Nenhuma campanha encontrada para o ID: ${cid}</div>`;
+    }
+  } catch(e) { 
+    console.error("Erro na planilha:", e);
+    container.innerHTML = "Erro ao carregar dados do tráfego."; 
+  }
 }
 
 /* --- 17. INICIALIZAÇÃO --- */
