@@ -568,28 +568,27 @@ async function renderReports() {
     const clienteId = getClientIdFromUrl();
     const report = rows.find(row => row[0].trim() === clienteId && row[1].trim() === "2026-07");
 
-    if (!report) {
-      container.innerHTML = `<div style="padding: 20px; color: #9ca3af;">Nenhum dado encontrado para este cliente.</div>`;
-      return;
+    if (report) {
+      const investimento = parseFloat(report[2]);
+      const conversas = parseFloat(report[3]);
+
+      container.innerHTML = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; padding: 20px;">
+          <div style="background: #1e1e24; padding: 20px; border-radius: 8px; color: #fff;">
+            <div style="color: #9ca3af; font-size: 12px;">INVESTIMENTO TOTAL</div>
+            <div style="font-size: 28px; font-weight: 700;">R$ ${investimento.toLocaleString('pt-BR')}</div>
+          </div>
+          <div style="background: #1e1e24; padding: 20px; border-radius: 8px; color: #fff;">
+            <div style="color: #10b981; font-size: 12px;">CONVERSAS</div>
+            <div style="font-size: 28px; font-weight: 700;">${conversas}</div>
+          </div>
+        </div>
+      `;
+    } else {
+      container.innerHTML = `<div style="padding: 20px;">Nenhum dado encontrado na planilha para este cliente.</div>`;
     }
-
-    const investimento = parseFloat(report[2]);
-    const conversas = parseFloat(report[3]);
-
-    container.innerHTML = `
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
-        <div style="background: #1e1e24; padding: 20px; border-radius: 8px; color: #fff;">
-          <div style="color: #9ca3af; font-size: 12px;">INVESTIMENTO</div>
-          <div style="font-size: 24px; font-weight: 700;">R$ ${investimento.toLocaleString('pt-BR')}</div>
-        </div>
-        <div style="background: #1e1e24; padding: 20px; border-radius: 8px; color: #fff;">
-          <div style="color: #9ca3af; font-size: 12px;">CONVERSAS</div>
-          <div style="font-size: 24px; font-weight: 700;">${conversas}</div>
-        </div>
-      </div>
-    `;
   } catch (error) {
-    container.innerHTML = `<div style="padding: 20px; color: #f43f5e;">Erro ao carregar dados.</div>`;
+    container.innerHTML = `<div style="padding: 20px;">Erro ao carregar dados da planilha.</div>`;
   }
 }
 
