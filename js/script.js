@@ -35,6 +35,19 @@ const STATUS_STYLE = {
   "Cancelado": { bg: "#f9fafb", border: "#d1d5db", text: "#6b7280", dot: "#9ca3af" }
 };
 
+const AD_OBJECTIVES = {
+  vendas:    { label: "Vendas",              resultLabel: "Compras",   icon: "ti-shopping-cart", color: "#10b981" },
+  leads:     { label: "Geração de Leads",     resultLabel: "Leads",     icon: "ti-user-plus",     color: "#3b82f6" },
+  conversas: { label: "Conversas",           resultLabel: "Conversas", icon: "ti-message-circle", color: "#8a6ac8" },
+  trafego:   { label: "Tráfego / Reconhecimento", resultLabel: "Cliques", icon: "ti-click", color: "#f59e0b" }
+};
+
+const AD_STATUS_STYLE = {
+  ativa:      { bg: "#f0fdf4", border: "#bbf7d0", text: "#15803d", dot: "#22c55e", label: "Ativa" },
+  pausada:    { bg: "#fffbeb", border: "#fde68a", text: "#b45309", dot: "#f59e0b", label: "Pausada" },
+  finalizada: { bg: "#f3f4f6", border: "#e5e7eb", text: "#4b5563", dot: "#9ca3af", label: "Finalizada" }
+};
+
 /* -----------------------------------------------------------
    2. ESTADO
    ----------------------------------------------------------- */
@@ -43,6 +56,8 @@ let month      = new Date().getMonth();
 let entries    = [];
 let allEntries = [];
 let demands    = [];
+let campaigns  = [];
+let editCampaign = null;
 let clientName = "Nome do cliente";
 let view       = "grid";
 let activeTab  = "calendar";
@@ -56,7 +71,7 @@ let pendingApprovalFiles = [];
 /* Multi-cliente (Firebase) */
 let currentClientId = null;
 let clientsList      = [];
-let _unsubEntries = null, _unsubDemands = null, _unsubClient = null;
+let _unsubEntries = null, _unsubDemands = null, _unsubClient = null, _unsubCampaigns = null;
 
 /* -----------------------------------------------------------
    3. UTILITÁRIOS
@@ -114,9 +129,10 @@ function load() {
 
 /* Conecta os listeners em tempo real do Firestore para um cliente específico */
 function attachClientListeners(clientId) {
-  if (_unsubEntries) _unsubEntries();
-  if (_unsubDemands) _unsubDemands();
-  if (_unsubClient)  _unsubClient();
+  if (_unsubEntries)   _unsubEntries();
+  if (_unsubDemands)   _unsubDemands();
+  if (_unsubClient)    _unsubClient();
+  if (_unsubCampaigns) _unsubCampaigns();
 
   currentClientId = clientId;
 
@@ -141,6 +157,16 @@ function attachClientListeners(clientId) {
       if (activeTab === "reports") renderReports();
       updateDemandBadge();
     }, err => console.error("Erro ao carregar demandas:", err));
+
+  /* Campanhas de Tráfego Pago (Meta Ads). Populado manualmente pela agência
+     ou automaticamente por um cenário no Make.com que escreve/atualiza
+     documentos em clients/{clientId}/campaigns a partir do Meta Ads Insights. */
+  _unsubCampaigns = db.collection("clients").doc(clientId).collection("campaigns")
+    .orderBy("updatedAt", "desc")
+    .onSnapshot(snap => {
+      campaigns = snap.docs.map(d => d.data());
+      if (activeTab === "ads") renderAds();
+    }, err => console.error("Erro ao carregar campanhas:", err));
 }
 
 /* Só usado no modo agência: carrega a lista de clientes e permite trocar entre eles */
@@ -265,15 +291,22 @@ function setTab(tab) {
   
   const reportTab = document.getElementById("tab-reports");
   if (reportTab) reportTab.className = "tab-btn" + (tab === "reports" ? " on" : "");
+
+  const adsTab = document.getElementById("tab-ads");
+  if (adsTab) adsTab.className = "tab-btn" + (tab === "ads" ? " on" : "");
   
   document.getElementById("section-calendar").style.display = tab === "calendar" ? "" : "none";
   document.getElementById("section-demands").style.display  = tab === "demands"  ? "" : "none";
   
   const reportSec = document.getElementById("section-reports");
   if (reportSec) reportSec.style.display = tab === "reports" ? "" : "none";
+
+  const adsSec = document.getElementById("section-ads");
+  if (adsSec) adsSec.style.display = tab === "ads" ? "" : "none";
   
   if (tab === "demands") renderDemands();
   if (tab === "reports") renderReports();
+  if (tab === "ads") renderAds();
 }
 
 /* -----------------------------------------------------------
@@ -1062,6 +1095,212 @@ function renderReports() {
   `;
 
   container.innerHTML = html;
+}
+
+/* -----------------------------------------------------------
+   16c. RENDERIZAÇÃO DO DASHBOARD DE TRÁFEGO PAGO (META ADS)
+   ----------------------------------------------------------- */
+function adDateValue(v) {
+  if (!v) return null;
+  if (typeof v.toDate === "function") return v.toDate(); // Firestore Timestamp
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function fmtBRL(n) {
+  n = Number(n) || 0;
+  return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+function fmtInt(n) {
+  return Math.round(Number(n) || 0).toLocaleString("pt-BR");
+}
+function fmtPct(n) {
+  return (Number(n) || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%";
+}
+function fmtDec(n) {
+  return (Number(n) || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/* Calcula as métricas derivadas a partir dos valores brutos de uma campanha.
+   Se a campanha já vier com métricas prontas do Meta Ads (via Make), elas
+   são respeitadas; caso contrário, calculamos a partir de spend/clicks/etc. */
+function adMetrics(c) {
+  const spend       = Number(c.spend) || 0;
+  const reach       = Number(c.reach) || 0;
+  const impressions = Number(c.impressions) || 0;
+  const clicks      = Number(c.clicks) || 0;
+  const results     = Number(c.results) || 0;
+  const revenue     = Number(c.revenue) || 0;
+
+  const ctr           = c.ctr           != null ? Number(c.ctr)           : (impressions > 0 ? (clicks / impressions) * 100 : 0);
+  const cpc            = c.cpc          != null ? Number(c.cpc)           : (clicks > 0 ? spend / clicks : 0);
+  const cpm            = c.cpm          != null ? Number(c.cpm)           : (impressions > 0 ? (spend / impressions) * 1000 : 0);
+  const costPerResult  = c.costPerResult != null ? Number(c.costPerResult) : (results > 0 ? spend / results : 0);
+  const roas           = c.roas         != null ? Number(c.roas)          : (spend > 0 ? revenue / spend : 0);
+
+  return { spend, reach, impressions, clicks, results, revenue, ctr, cpc, cpm, costPerResult, roas };
+}
+
+function filteredCampaigns() {
+  const sel = document.getElementById("ads-period-sel");
+  const val = sel ? sel.value : "30";
+  if (val === "all") return campaigns;
+  const days = parseInt(val, 10);
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  return campaigns.filter(c => {
+    const d = adDateValue(c.updatedAt);
+    return !d || d >= cutoff;
+  });
+}
+
+function renderAds() {
+  const container = document.getElementById("ads-content");
+  if (!container) return;
+
+  const list = filteredCampaigns();
+
+  if (list.length === 0) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="empty-icon"><i class="ti ti-brand-meta" aria-hidden="true" style="font-size:40px;color:var(--color-text-tertiary)"></i></div>
+      <div class="empty-title">Nenhuma campanha neste período</div>
+      <div style="font-size:13px">${clientMode ? "Assim que houver dados de campanhas, eles aparecerão aqui." : "Adicione uma campanha manualmente ou conecte o Make para preencher automaticamente."}</div>
+    </div>`;
+    return;
+  }
+
+  // Totais agregados
+  const totals = list.reduce((acc, c) => {
+    const m = adMetrics(c);
+    acc.spend += m.spend; acc.reach += m.reach; acc.impressions += m.impressions;
+    acc.clicks += m.clicks; acc.results += m.results; acc.revenue += m.revenue;
+    return acc;
+  }, { spend: 0, reach: 0, impressions: 0, clicks: 0, results: 0, revenue: 0 });
+
+  const totalCTR          = totals.impressions > 0 ? (totals.clicks / totals.impressions) * 100 : 0;
+  const totalCPC          = totals.clicks > 0 ? totals.spend / totals.clicks : 0;
+  const totalCPM          = totals.impressions > 0 ? (totals.spend / totals.impressions) * 1000 : 0;
+  const totalCostPerResult= totals.results > 0 ? totals.spend / totals.results : 0;
+  const hasSales          = list.some(c => c.objective === "vendas");
+  const totalROAS         = totals.spend > 0 ? totals.revenue / totals.spend : 0;
+
+  const card = (label, value, sub, color) => `
+    <div style="background:#1e1e24;border:1px solid #2d2d35;padding:18px 20px;border-radius:8px;color:#fff">
+      <div style="color:${color || "#9ca3af"};font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">${label}</div>
+      <div style="font-size:24px;font-weight:700">${value}</div>
+      ${sub ? `<div style="font-size:12px;color:#6b7280;margin-top:4px">${sub}</div>` : ""}
+    </div>`;
+
+  let html = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:20px">
+      ${card("Investimento", fmtBRL(totals.spend), null, "#f2c55a")}
+      ${card("Alcance", fmtInt(totals.reach), "pessoas únicas", "#7fc36d")}
+      ${card("Impressões", fmtInt(totals.impressions), "vezes exibido", "#5b73c4")}
+      ${card("Resultado", fmtInt(totals.results), "conversas, leads ou compras", "#8a6ac8")}
+      ${card("Custo por Resultado", fmtBRL(totalCostPerResult), null, "#f2c55a")}
+      ${card("CTR", fmtPct(totalCTR), "taxa de cliques", "#7fc36d")}
+      ${card("CPC", fmtBRL(totalCPC), "custo por clique", "#5b73c4")}
+      ${card("CPM", fmtBRL(totalCPM), "custo por mil impressões", "#8a6ac8")}
+      ${hasSales ? card("ROAS", fmtDec(totalROAS) + "x", "retorno sobre investimento", "#10b981") : ""}
+    </div>
+
+    <div style="font-size:14px;font-weight:600;color:var(--color-text-primary);margin:22px 0 12px">Campanhas</div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+  `;
+
+  html += list.map(c => {
+    const m = adMetrics(c);
+    const obj = AD_OBJECTIVES[c.objective] || AD_OBJECTIVES.trafego;
+    const st  = AD_STATUS_STYLE[c.status] || AD_STATUS_STYLE.ativa;
+    const d   = adDateValue(c.updatedAt);
+    const updatedLabel = d ? d.toLocaleDateString("pt-BR") : "—";
+    const editAttr = clientMode ? "" : ` onclick="openAdsModal('${c.id}')" style="cursor:pointer"`;
+
+    return `
+      <div class="demand-card"${editAttr}>
+        <div class="demand-card-header">
+          <div>
+            <div class="demand-card-title"><i class="ti ${obj.icon}" aria-hidden="true" style="color:${obj.color};margin-right:6px"></i>${c.name || "Campanha sem nome"}</div>
+            <div class="demand-card-meta">${obj.label} · Atualizado em ${updatedLabel}</div>
+          </div>
+          <div class="status-pill" style="background:${st.bg};color:${st.text};border:0.5px solid ${st.border}">${st.label}</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-top:12px">
+          <div><div style="font-size:11px;color:var(--color-text-tertiary)">Investimento</div><div style="font-size:14px;font-weight:600">${fmtBRL(m.spend)}</div></div>
+          <div><div style="font-size:11px;color:var(--color-text-tertiary)">Alcance</div><div style="font-size:14px;font-weight:600">${fmtInt(m.reach)}</div></div>
+          <div><div style="font-size:11px;color:var(--color-text-tertiary)">Impressões</div><div style="font-size:14px;font-weight:600">${fmtInt(m.impressions)}</div></div>
+          <div><div style="font-size:11px;color:var(--color-text-tertiary)">${obj.resultLabel}</div><div style="font-size:14px;font-weight:600">${fmtInt(m.results)}</div></div>
+          <div><div style="font-size:11px;color:var(--color-text-tertiary)">Custo/Result.</div><div style="font-size:14px;font-weight:600">${fmtBRL(m.costPerResult)}</div></div>
+          <div><div style="font-size:11px;color:var(--color-text-tertiary)">CTR</div><div style="font-size:14px;font-weight:600">${fmtPct(m.ctr)}</div></div>
+          <div><div style="font-size:11px;color:var(--color-text-tertiary)">CPC</div><div style="font-size:14px;font-weight:600">${fmtBRL(m.cpc)}</div></div>
+          <div><div style="font-size:11px;color:var(--color-text-tertiary)">CPM</div><div style="font-size:14px;font-weight:600">${fmtBRL(m.cpm)}</div></div>
+          ${c.objective === "vendas" ? `<div><div style="font-size:11px;color:var(--color-text-tertiary)">ROAS</div><div style="font-size:14px;font-weight:600;color:#10b981">${fmtDec(m.roas)}x</div></div>` : ""}
+        </div>
+      </div>`;
+  }).join("");
+
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+/* -----------------------------------------------------------
+   16d. MODAL DE CAMPANHA (SOMENTE AGÊNCIA — ENTRADA MANUAL)
+   ----------------------------------------------------------- */
+function openAdsModal(id) {
+  editCampaign = id ? campaigns.find(c => c.id === id) : null;
+  document.getElementById("ads-modal-title").textContent = editCampaign ? "Editar campanha" : "Nova campanha";
+
+  document.getElementById("ad-name").value        = editCampaign ? (editCampaign.name || "") : "";
+  document.getElementById("ad-objective").value   = editCampaign ? (editCampaign.objective || "vendas") : "vendas";
+  document.getElementById("ad-status").value       = editCampaign ? (editCampaign.status || "ativa") : "ativa";
+  const d = editCampaign ? adDateValue(editCampaign.updatedAt) : new Date();
+  document.getElementById("ad-date").value         = (d || new Date()).toISOString().slice(0, 10);
+  document.getElementById("ad-spend").value        = editCampaign ? (editCampaign.spend || "") : "";
+  document.getElementById("ad-reach").value        = editCampaign ? (editCampaign.reach || "") : "";
+  document.getElementById("ad-impressions").value  = editCampaign ? (editCampaign.impressions || "") : "";
+  document.getElementById("ad-results").value      = editCampaign ? (editCampaign.results || "") : "";
+  document.getElementById("ad-clicks").value       = editCampaign ? (editCampaign.clicks || "") : "";
+  document.getElementById("ad-revenue").value      = editCampaign ? (editCampaign.revenue || "") : "";
+
+  const delWrap = document.getElementById("ads-modal-del-wrap");
+  delWrap.innerHTML = editCampaign
+    ? `<button class="btn-del" onclick="deleteAdCampaign()" style="background:#ef4444;color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:6px"><i class="ti ti-trash" aria-hidden="true"></i> Excluir</button>`
+    : "";
+
+  document.getElementById("ads-modal").style.display = "flex";
+}
+function closeAdsModal() { document.getElementById("ads-modal").style.display = "none"; }
+
+function saveAdCampaign() {
+  const name = document.getElementById("ad-name").value.trim();
+  if (!name) { alert("Informe o nome da campanha."); return; }
+
+  const campaign = {
+    id: editCampaign ? editCampaign.id : uid(),
+    name,
+    objective:   document.getElementById("ad-objective").value,
+    status:      document.getElementById("ad-status").value,
+    updatedAt:   document.getElementById("ad-date").value || new Date().toISOString().slice(0, 10),
+    spend:       parseFloat(document.getElementById("ad-spend").value) || 0,
+    reach:       parseInt(document.getElementById("ad-reach").value) || 0,
+    impressions: parseInt(document.getElementById("ad-impressions").value) || 0,
+    results:     parseInt(document.getElementById("ad-results").value) || 0,
+    clicks:      parseInt(document.getElementById("ad-clicks").value) || 0,
+    revenue:     parseFloat(document.getElementById("ad-revenue").value) || 0
+  };
+
+  db.collection("clients").doc(currentClientId).collection("campaigns").doc(campaign.id).set(campaign, { merge: true })
+    .catch(err => alert("Erro: " + err.message));
+
+  closeAdsModal();
+}
+
+function deleteAdCampaign() {
+  if (!editCampaign) return;
+  if (!confirm("Excluir esta campanha?")) return;
+  db.collection("clients").doc(currentClientId).collection("campaigns").doc(editCampaign.id).delete()
+    .catch(err => alert("Erro: " + err.message));
+  closeAdsModal();
 }
 
 /* -----------------------------------------------------------
