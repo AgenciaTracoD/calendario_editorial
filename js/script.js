@@ -565,13 +565,15 @@ async function renderReports() {
     const data = await response.text();
     const rows = data.split("\n").map(row => row.split(","));
     
-    const clienteId = getClientIdFromUrl();
+    // Pega o ID do cliente da URL atual
+    const clienteId = getClientIdFromUrl(); 
     const report = rows.find(row => row[0].trim() === clienteId && row[1].trim() === "2026-07");
 
     if (report) {
       const investimento = parseFloat(report[2]);
       const conversas = parseFloat(report[3]);
 
+      // INJETANDO NO HTML (Verifique se o seu HTML tem a div com id="reports-content")
       container.innerHTML = `
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; padding: 20px;">
           <div style="background: #1e1e24; padding: 20px; border-radius: 8px; color: #fff;">
@@ -585,10 +587,11 @@ async function renderReports() {
         </div>
       `;
     } else {
-      container.innerHTML = `<div style="padding: 20px;">Nenhum dado encontrado na planilha para este cliente.</div>`;
+      container.innerHTML = `<div style="padding: 20px; color: #fff;">Nenhum dado encontrado para este cliente.</div>`;
     }
   } catch (error) {
-    container.innerHTML = `<div style="padding: 20px;">Erro ao carregar dados da planilha.</div>`;
+    console.error("Erro na planilha:", error);
+    container.innerHTML = `<div style="padding: 20px; color: #f43f5e;">Erro ao carregar dados.</div>`;
   }
 }
 
