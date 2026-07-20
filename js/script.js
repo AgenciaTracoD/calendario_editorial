@@ -1064,6 +1064,45 @@ function renderReports() {
   container.innerHTML = html;
 }
 
+/* 16c. RENDERIZAÇÃO DO TRÁFEGO PAGO (ADS) - LENDO DA PLANILHA */
+async function renderAds() {
+  const container = document.getElementById("ads-content");
+  if (!container) return;
+
+  // Mostra um carregando enquanto busca os dados
+  container.innerHTML = "Carregando campanhas...";
+
+  const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTgn9xilq94Z8fjr1HB168n1dcybNReZg8D7_xZbHLc1P_vpZ2quah2ZlQAdWKXUJGnc1byXttqyeVz/pub?output=csv";
+
+  try {
+    const response = await fetch(csvUrl);
+    const data = await response.text();
+    const rows = data.split("\n").map(row => row.split(","));
+    
+    // Filtra apenas as linhas do cliente logado (row[0])
+    const clienteId = getClientIdFromUrl();
+    const campanhas = rows.filter(row => row[0].trim() === clienteId && row[1] !== "Mes");
+
+    if (campanhas.length > 0) {
+      container.innerHTML = campanhas.map(c => {
+        // c[2] = Investimento, c[3] = Conversas
+        return `
+          <div class="demand-card" style="margin-bottom: 10px; padding: 15px; border: 1px solid #ddd; border-radius: 8px;">
+            <div style="font-weight: bold;">Campanha: ${c[1]}</div>
+            <div>Investimento: R$ ${parseFloat(c[2]).toLocaleString('pt-BR')}</div>
+            <div>Resultados (Conversas): ${c[3]}</div>
+          </div>
+        `;
+      }).join("");
+    } else {
+      container.innerHTML = "Nenhuma campanha encontrada na planilha para este cliente.";
+    }
+  } catch (error) {
+    container.innerHTML = "Erro ao carregar dados do tráfego pago.";
+    console.error(error);
+  }
+}
+
 /* -----------------------------------------------------------
    17. INICIALIZAÇÃO
    ----------------------------------------------------------- */
