@@ -1078,9 +1078,24 @@ async function renderAds() {
   const container = document.getElementById("ads-content");
   if (!container) return;
 
-  container.innerHTML = `<div style="padding: 20px; color: #9ca3af;">Carregando campanhas da planilha...</div>`;
+  container.innerHTML = `<div style="padding: 20px; color: #9ca3af;">Carregando campanhas do cliente...</div>`;
 
-  const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTgn9xilq94Z8fjr1HB168n1dcybNReZg8D7_xZbHLc1P_vpZ2quah2ZlQAdWKXUJGnc1byXttqyeVz/pub?output=csv";
+  const clienteId = (getClientIdFromUrl() || "").trim();
+
+  // Mapeie aqui o link CSV publicado de cada aba específica do cliente:
+  const linksPorCliente = {
+    "8ejz9r7l7f5bh": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTgn9xilq94Z8fjr1HB168n1dcybNReZg8D7_xZbHLc1P_vpZ2quah2ZlQAdWKXUJGnc1byXttqyeVz/pubhtml?gid=0&single=true",
+    "4bv8br4n1nfpui": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTgn9xilq94Z8fjr1HB168n1dcybNReZg8D7_xZbHLc1P_vpZ2quah2ZlQAdWKXUJGnc1byXttqyeVz/pubhtml?gid=1018772004&single=true",
+    "tdz3x48jcyq4zy": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTgn9xilq94Z8fjr1HB168n1dcybNReZg8D7_xZbHLc1P_vpZ2quah2ZlQAdWKXUJGnc1byXttqyeVz/pubhtml?gid=636281314&single=true"
+    // Adicione os outros clientes aqui no formato: "ID_DO_CLIENTE": "LINK_CSV_DA_ABA"
+  };
+
+  const csvUrl = linksPorCliente[clienteId];
+
+  if (!csvUrl) {
+    container.innerHTML = `<div style="padding: 20px; color: #9ca3af;">Nenhuma aba de tráfego configurada para este cliente.</div>`;
+    return;
+  }
 
   try {
     const response = await fetch(csvUrl);
@@ -1089,25 +1104,12 @@ async function renderAds() {
     const lines = text.split("\n").map(l => l.trim()).filter(l => l.length > 0);
     
     if (lines.length <= 1) {
-      container.innerHTML = `<div style="padding: 20px; color: #f43f5e;">A planilha está vazia.</div>`;
+      container.innerHTML = `<div style="padding: 20px; color: #f43f5e;">A aba deste cliente está vazia.</div>`;
       return;
     }
 
-    const dataRows = lines.slice(1).map(row => row.split(","));
-    const clienteId = (getClientIdFromUrl() || "").trim();
-
-    // Tenta filtrar pelo ID do cliente. Se por acaso a planilha pública demorar a atualizar o cache, 
-    // ele exibe os dados para não deixar a tela em branco.
-    let campanhas = dataRows.filter(row => {
-      const idPlanilha = (row[0] || "").replace(/"/g, "").trim();
-      return idPlanilha === clienteId;
-    });
-
-    // Fallback de segurança: se o cache do Google demorar a atualizar o ID na planilha,
-    // ele exibe a linha de dados para garantir que você visualize os cards funcionando perfeitamente.
-    if (campanhas.length === 0 && dataRows.length > 0) {
-      campanhas = dataRows; 
-    }
+    // Como cada aba é exclusiva do cliente, todas as linhas de dados aqui pertencem a ele (permite várias campanhas na mesma aba)
+    const campanhas = lines.slice(1).map(row => row.split(","));
 
     container.innerHTML = campanhas.map(c => {
       const limpar = (val) => (val || "").replace(/"/g, "").trim();
@@ -1165,7 +1167,6 @@ async function renderAds() {
     container.innerHTML = `<div style="padding: 20px; color: #f43f5e;">Erro ao processar os dados da planilha.</div>`;
   }
 }
-
 /* -----------------------------------------------------------
    17. INICIALIZAÇÃO
    ----------------------------------------------------------- */
