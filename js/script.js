@@ -1084,7 +1084,7 @@ async function renderAds() {
 
   // Mapeie aqui o link CSV publicado de cada aba específica do cliente:
   const linksPorCliente = {
-    "8ejz9r7l7f5bh": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSXwN8JgAROeH7TztfOc977noXRgdrjDmgivquzAqUZd4Ff6njO7Y4blemHvIEW400cXpeQOE5Rkn2O/pub?output=csv",
+    "8ejz9r7l7f5bh": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTf9iHSki72lUvYYCQROgxtxtjY60sdD9vbEUtkEsQRp6qFbm3xc0B89o8V3_4IpajTCPfBbRFoGPfn/pub?output=csv",
     "4bv8br4n1nfpui": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTLRzjTIvuIGjrVFdkFKcxvpfO24q42FS1z3-FimaiYo5pOToZxfWSEUvgZ3thsxHJ0Ptiuj82lZOm1/pub?output=csv",
     "tdz3x48jcyq4zy": "https://docs.google.com/spreadsheets/d/e/2PACX-1vQxs5yGuAvqTVGUYSw5HMkzOKVkRHaqpi2xMoVbf-e6i3nP3hVBsKRJsfuAIEGFTwmsWroEoBqgCvBA/pub?output=csv"
     // Adicione os outros clientes aqui no formato: "ID_DO_CLIENTE": "LINK_CSV_DA_ABA"
