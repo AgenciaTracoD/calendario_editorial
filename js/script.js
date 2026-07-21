@@ -1094,18 +1094,20 @@ async function renderAds() {
     }
 
     const dataRows = lines.slice(1).map(row => row.split(","));
-    const clienteId = getClientIdFromUrl();
+    const clienteId = (getClientIdFromUrl() || "").trim();
 
-    // Filtra rigorosamente apenas pelas campanhas do ID do cliente atual (Coluna A / índice 0)
-    const campanhas = dataRows.filter(row => row[0] && row[0].trim() === clienteId);
+    // Filtra comparando os IDs limpos de espaços e aspas
+    const campanhas = dataRows.filter(row => {
+      const idPlanilha = (row[0] || "").replace(/"/g, "").trim();
+      return idPlanilha === clienteId;
+    });
 
     if (campanhas.length === 0) {
-      container.innerHTML = `<div style="padding: 20px; color: #9ca3af;">Nenhuma campanha de tráfego pago encontrada para este cliente.</div>`;
+      container.innerHTML = `<div style="padding: 20px; color: #9ca3af;">Nenhuma campanha de tráfego pago encontrada para este cliente (ID procurado: ${clienteId}).</div>`;
       return;
     }
 
     container.innerHTML = campanhas.map(c => {
-      // Função auxiliar para remover as aspas que o CSV do Google Sheets adiciona
       const limpar = (val) => (val || "").replace(/"/g, "").trim();
 
       const nomeCampanha   = limpar(c[1]) || "Campanha";
