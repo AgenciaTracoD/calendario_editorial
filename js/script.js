@@ -1078,34 +1078,43 @@ async function renderAds() {
   const container = document.getElementById("ads-content");
   if (!container) return;
 
-  container.innerHTML = `<div style="padding: 20px; color: #9ca3af;">Carregando dados de tráfego pago...</div>`;
+  container.innerHTML = `<div style="padding: 20px; color: #9ca3af;">Carregando campanhas da planilha...</div>`;
 
   const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTgn9xilq94Z8fjr1HB168n1dcybNReZg8D7_xZbHLc1P_vpZ2quah2ZlQAdWKXUJGnc1byXttqyeVz/pub?output=csv";
 
   try {
     const response = await fetch(csvUrl);
-    const data = await response.text();
-    const rows = data.split("\n").map(row => row.split(","));
+    const text = await response.text();
     
-    const clienteId = getClientIdFromUrl();
+    // Divide o texto CSV em linhas
+    const lines = text.split("\n").map(l => l.trim()).filter(l => l.length > 0);
     
-    // Filtra as linhas correspondentes ao cliente atual (ajuste o índice da coluna conforme sua planilha)
-    // Exemplo: row[0] é o ID do cliente e row[1] pode ser o mês ou o nome da campanha
-    const campanhas = rows.filter(row => row[0] && row[0].trim() === clienteId && row[0].trim() !== "ID_Cliente");
+    if (lines.length <= 1) {
+      container.innerHTML = `<div style="padding: 20px; color: #f43f5e;">A planilha parece estar vazia além do cabeçalho.</div>`;
+      return;
+    }
 
+    // Pula a primeira linha (cabeçalho) e pega todas as linhas de dados
+    const dataRows = lines.slice(1).map(row => row.split(","));
+    const clienteId = getClientIdFromUrl();
+
+    // Tenta filtrar pelo ID do cliente. Se não achar nada, mostra todas para teste.
+    let campanhas = dataRows.filter(row => row[0] && row[0].trim() === clienteId);
+    
     if (campanhas.length === 0) {
+      // Se o ID não bateu, exibe um aviso informando qual ID o site está procurando
       container.innerHTML = `
-        <div class="empty-state" style="padding: 40px; text-align: center; color: #9ca3af;">
-          <div class="empty-title">Nenhum dado de tráfego pago encontrado para este cliente.</div>
+        <div style="padding: 20px; color: #f59e0b; background: #1e1e24; border-radius: 8px;">
+          <h3>Atenção com o ID do Cliente!</h3>
+          <p>O site está procurando pelo ID: <strong>${clienteId}</strong> na Coluna A da planilha.</p>
+          <p>Verifique se a Coluna A da sua planilha contém exatamente esse código.</p>
         </div>`;
       return;
     }
 
-    // Monta os cards com todas as métricas solicitadas
+    // Renderiza os cards se encontrou as campanhas
     container.innerHTML = campanhas.map(c => {
-      // Mapeia as colunas da sua planilha (exemplo: c[2]=Resultados, c[3]=Custo/Res, c[4]=Impressões, c[5]=Alcance, c[6]=Investimento, c[7]=CPC, c[8]=CPM)
-      // Caso queira mudar a ordem das colunas, basta alterar o número do índice do array c[]
-      const nomeCampanha   = c[1] || "Campanha Geral";
+      const nomeCampanha   = c[1] || "Campanha";
       const resultados     = c[2] || "0";
       const custoRes       = c[3] || "R$ 0,00";
       const impressoes     = c[4] || "0";
@@ -1141,11 +1150,11 @@ async function renderAds() {
               <div style="font-size: 20px; font-weight: 700; color: #fff;">${alcance}</div>
             </div>
             <div style="background: #17171c; padding: 14px; border-radius: 6px;">
-              <div style="color: #9ca3af; font-size: 11px; text-transform: uppercase; margin-bottom: 4px;">CPC (Custo por Clique)</div>
+              <div style="color: #9ca3af; font-size: 11px; text-transform: uppercase; margin-bottom: 4px;">CPC</div>
               <div style="font-size: 20px; font-weight: 700; color: #fff;">${cpc}</div>
             </div>
             <div style="background: #17171c; padding: 14px; border-radius: 6px;">
-              <div style="color: #9ca3af; font-size: 11px; text-transform: uppercase; margin-bottom: 4px;">CPM (Custo por 1.000)</div>
+              <div style="color: #9ca3af; font-size: 11px; text-transform: uppercase; margin-bottom: 4px;">CPM</div>
               <div style="font-size: 20px; font-weight: 700; color: #fff;">${cpm}</div>
             </div>
           </div>
@@ -1154,8 +1163,8 @@ async function renderAds() {
     }).join("");
 
   } catch (error) {
-    console.error("Erro ao carregar relatório de tráfego pago:", error);
-    container.innerHTML = `<div style="padding: 20px; color: #f43f5e;">Erro ao carregar dados do tráfego pago.</div>`;
+    console.error("Erro ao carregar tráfego pago:", error);
+    container.innerHTML = `<div style="padding: 20px; color: #f43f5e;">Erro ao processar os dados da planilha.</div>`;
   }
 }
 
