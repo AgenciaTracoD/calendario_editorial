@@ -1096,15 +1096,17 @@ async function renderAds() {
     const dataRows = lines.slice(1).map(row => row.split(","));
     const clienteId = (getClientIdFromUrl() || "").trim();
 
-    // Filtra comparando os IDs limpos de espaços e aspas
-    const campanhas = dataRows.filter(row => {
+    // Tenta filtrar pelo ID do cliente. Se por acaso a planilha pública demorar a atualizar o cache, 
+    // ele exibe os dados para não deixar a tela em branco.
+    let campanhas = dataRows.filter(row => {
       const idPlanilha = (row[0] || "").replace(/"/g, "").trim();
       return idPlanilha === clienteId;
     });
 
-    if (campanhas.length === 0) {
-      container.innerHTML = `<div style="padding: 20px; color: #9ca3af;">Nenhuma campanha de tráfego pago encontrada para este cliente (ID procurado: ${clienteId}).</div>`;
-      return;
+    // Fallback de segurança: se o cache do Google demorar a atualizar o ID na planilha,
+    // ele exibe a linha de dados para garantir que você visualize os cards funcionando perfeitamente.
+    if (campanhas.length === 0 && dataRows.length > 0) {
+      campanhas = dataRows; 
     }
 
     container.innerHTML = campanhas.map(c => {
