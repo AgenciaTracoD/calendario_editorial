@@ -1089,23 +1089,29 @@ async function renderAds() {
     const lines = text.split("\n").map(l => l.trim()).filter(l => l.length > 0);
     
     if (lines.length <= 1) {
-      container.innerHTML = `<div style="padding: 20px; color: #f43f5e;">A planilha parece estar vazia além do cabeçalho.</div>`;
+      container.innerHTML = `<div style="padding: 20px; color: #f43f5e;">A planilha está vazia.</div>`;
       return;
     }
 
-    // Pega todas as linhas de dados (ignorando o cabeçalho)
     const dataRows = lines.slice(1).map(row => row.split(","));
+    const clienteId = getClientIdFromUrl();
 
-    // Exibe todas as linhas encontradas na planilha (ignora o filtro de ID por enquanto para testar)
-    container.innerHTML = dataRows.map(c => {
+    // Filtra pelo ID do cliente na Coluna A (índice 0)
+    let campanhas = dataRows.filter(row => row[0] && row[0].trim() === clienteId);
+    
+    // Se não achar por ID para teste, pega todas as linhas
+    if (campanhas.length === 0) campanhas = dataRows;
+
+    container.innerHTML = campanhas.map(c => {
+      // Ajuste exato das colunas conforme a sua planilha real:
       const nomeCampanha   = c[1] || "Campanha";
       const resultados     = c[2] || "0";
-      const custoRes       = c[3] || "R$ 0,00";
-      const impressoes     = c[4] || "0";
-      const alcance        = c[5] || "0";
-      const investimento   = c[6] || "R$ 0,00";
-      const cpc            = c[7] || "R$ 0,00";
-      const cpm            = c[8] || "R$ 0,00";
+      const custoRes       = c[3] + (c[4] ? "," + c[4] : "") || "R$ 0,00"; // Trata a vírgula do dinheiro
+      const impressoes     = c[5] || "0";
+      const alcance        = c[6] || "0";
+      const investimento   = c[7] + (c[8] ? "," + c[8] : "") || "R$ 0,00"; // Trata a vírgula do investimento
+      const cpc            = c[9] + (c[10] ? "," + c[10] : "") || "R$ 0,00";
+      const cpm            = c[11] + (c[12] ? "," + c[12] : "") || "R$ 0,00";
 
       return `
         <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff; margin-bottom: 20px;">
