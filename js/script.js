@@ -967,55 +967,106 @@ function renderDemands() {
   }).join("");
 }
 
-/* --- 16b. RENDERIZAÇÃO DO RELATÓRIO (INTEGRADO PLANILHA) --- */
-async function renderReports() {
+/* -----------------------------------------------------------
+   16b. RENDERIZAÇÃO DO RELATÓRIO MENSAL (DASHBOARD)
+   ----------------------------------------------------------- */
+function renderReports() {
   const container = document.getElementById("reports-content");
   if (!container) return;
-  const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTgn9xilq94Z8fjr1HB168n1dcybNReZg8D7_xZbHLc1P_vpZ2quah2ZlQAdWKXUJGnc1byXttqyeVz/pub?output=csv";
-  try {
-    const res = await fetch(csvUrl);
-    const data = await res.text();
-    const rows = data.split("\n").map(r => r.split(","));
-    const cid = getClientIdFromUrl();
-    const r = rows.find(row => row[0].trim() === cid && row[1].trim() === "2026-07");
-    container.innerHTML = r ? `<div style="padding:20px;"><h3>Julho/2026</h3><p>Investimento: R$ ${r[2]}</p><p>Conversas: ${r[3]}</p></div>` : "Sem dados para o mês.";
-  } catch(e) { container.innerHTML = "Erro ao carregar dados."; }
-}
 
-/* --- 16c. RENDERIZAÇÃO TRÁFEGO PAGO (PLANILHA MELHORADA) --- */
-async function renderAds() {
-  console.log("A função renderAds foi chamada!");
-  const container = document.getElementById("ads-content");
-  
-  if (!container) {
-    console.error("ERRO: O elemento 'ads-content' não foi encontrado no HTML.");
+  const totalPosts = entries.length;
+
+  if (totalPosts === 0) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="empty-icon"><i class="ti ti-chart-donut" aria-hidden="true" style="font-size:40px;color:var(--color-text-tertiary)"></i></div>
+      <div class="empty-title">Sem dados para este mês</div>
+      <div style="font-size:13px">Planeje ou publique posts neste mês para gerar o relatório estatístico.</div>
+    </div>`;
     return;
   }
-  
-  container.innerHTML = "Buscando dados...";
-  console.log("Iniciando fetch da planilha...");
 
-  const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTgn9xilq94Z8fjr1HB168n1dcybNReZg8D7_xZbHLc1P_vpZ2quah2ZlQAdWKXUJGnc1byXttqyeVz/pub?output=csv";
-  
-  try {
-    const res = await fetch(csvUrl);
-    const data = await res.text();
-    console.log("Dados recebidos da planilha:", data.substring(0, 100)); // Mostra o início dos dados no console
-    
-    const rows = data.split("\n").map(r => r.split(","));
-    const cid = getClientIdFromUrl();
-    const r = rows.find(row => row[0].trim() === cid);
-    
-    if (r) {
-      container.innerHTML = `<div style="padding:20px;"><h3>Dados de Campanha</h3><p>Investimento: R$ ${r[2]}</p><p>Conversas: ${r[3]}</p></div>`;
-    } else {
-      container.innerHTML = `Nenhum dado para o ID: ${cid}`;
-    }
-  } catch(e) { 
-    console.error("Erro na busca:", e);
-    container.innerHTML = "Erro ao carregar."; 
-  }
+  const publicados = entries.filter(e => (e.status || "").toLowerCase() === "publicado").length;
+  const agendados = entries.filter(e => (e.status || "").toLowerCase() === "agendado").length;
+  const taxaConclusao = totalPosts > 0 ? Math.round(((publicados + agendados) / totalPosts) * 100) : 0;
+
+  const platContagem = {};
+  const formContagem = {};
+
+  entries.forEach(e => {
+    if (e.platform) platContagem[e.platform] = (platContagem[e.platform] || 0) + 1;
+    if (e.format) formContagem[e.format] = (formContagem[e.format] || 0) + 1;
+  });
+
+  let html = `
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+      <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff;">
+        <div style="color: #9ca3af; font-size: 12px; font-weight: 500; text-transform: uppercase; margin-bottom: 4px;">Volume Planejado</div>
+        <div style="font-size: 28px; font-weight: 700;">${totalPosts} <span style="font-size: 14px; font-weight: 400; color: #9ca3af;">peças</span></div>
+      </div>
+      <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff;">
+        <div style="color: #10b981; font-size: 12px; font-weight: 500; text-transform: uppercase; margin-bottom: 4px;">Entregues / Publicados</div>
+        <div style="font-size: 28px; font-weight: 700; color: #10b981;">${publicados} <span style="font-size: 14px; font-weight: 400; color: #a7f3d0;">posts</span></div>
+      </div>
+      <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff;">
+        <div style="color: #3b82f6; font-size: 12px; font-weight: 500; text-transform: uppercase; margin-bottom: 4px;">Agendados / Prontos</div>
+        <div style="font-size: 28px; font-weight: 700; color: #3b82f6;">${agendados} <span style="font-size: 14px; font-weight: 400; color: #bfdbfe;">posts</span></div>
+      </div>
+      <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff;">
+        <div style="color: #f59e0b; font-size: 12px; font-weight: 500; text-transform: uppercase; margin-bottom: 4px;">Índice de Conclusão</div>
+        <div style="font-size: 28px; font-weight: 700; color: #f59e0b;">${taxaConclusao}%</div>
+        <div style="background: #2d2d35; height: 6px; border-radius: 3px; margin-top: 8px; overflow: hidden;">
+          <div style="background: #f59e0b; width: ${taxaConclusao}%; height: 100%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+      <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff;">
+        <h4 style="margin: 0 0 16px 0; font-size: 14px; font-weight: 600; color: #e5e7eb;">Distribuição por Canal</h4>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          ${Object.entries(platContagem).map(([plat, qtd]) => {
+            const pct = Math.round((qtd / totalPosts) * 100);
+            return `
+              <div>
+                <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px;">
+                  <span>${plat}</span>
+                  <span style="font-weight: 600;">${qtd} (${pct}%)</span>
+                </div>
+                <div style="background: #2d2d35; height: 8px; border-radius: 4px; overflow: hidden;">
+                  <div style="background: #3b82f6; width: ${pct}%; height: 100%;"></div>
+                </div>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff;">
+        <h4 style="margin: 0 0 16px 0; font-size: 14px; font-weight: 600; color: #e5e7eb;">Formatos Utilizados</h4>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          ${Object.entries(formContagem).map(([form, qtd]) => {
+            const pct = Math.round((qtd / totalPosts) * 100);
+            return `
+              <div>
+                <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px;">
+                  <span>${form}</span>
+                  <span style="font-weight: 600;">${qtd} (${pct}%)</span>
+                </div>
+                <div style="background: #2d2d35; height: 8px; border-radius: 4px; overflow: hidden;">
+                  <div style="background: #10b981; width: ${pct}%; height: 100%;"></div>
+                </div>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
 }
 
-/* --- 17. INICIALIZAÇÃO --- */
+/* -----------------------------------------------------------
+   17. INICIALIZAÇÃO
+   ----------------------------------------------------------- */
 document.addEventListener("DOMContentLoaded", load);
+
+function toggleClientMode() {}
