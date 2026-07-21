@@ -1078,7 +1078,7 @@ async function renderAds() {
   const container = document.getElementById("ads-content");
   if (!container) return;
 
-  container.innerHTML = `<div style="padding: 20px; color: #9ca3af;">Carregando campanhas da planilha...</div>`;
+  container.innerHTML = `<div style="padding: 24px; color: var(--color-text-tertiary); font-size: 13px;">Carregando painel de campanhas...</div>`;
 
   const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTgn9xilq94Z8fjr1HB168n1dcybNReZg8D7_xZbHLc1P_vpZ2quah2ZlQAdWKXUJGnc1byXttqyeVz/pub?output=csv";
 
@@ -1089,64 +1089,76 @@ async function renderAds() {
     const lines = text.split("\n").map(l => l.trim()).filter(l => l.length > 0);
     
     if (lines.length <= 1) {
-      container.innerHTML = `<div style="padding: 20px; color: #f43f5e;">A planilha está vazia.</div>`;
+      container.innerHTML = `<div class="empty-state"><div class="empty-title">Nenhuma campanha cadastrada na planilha.</div></div>`;
       return;
     }
 
     const dataRows = lines.slice(1).map(row => row.split(","));
     const clienteId = getClientIdFromUrl();
 
-    // Filtra pelo ID do cliente na Coluna A (índice 0)
     let campanhas = dataRows.filter(row => row[0] && row[0].trim() === clienteId);
-    
-    // Se não achar por ID para teste, pega todas as linhas
     if (campanhas.length === 0) campanhas = dataRows;
 
     container.innerHTML = campanhas.map(c => {
-      // Ajuste exato das colunas conforme a sua planilha real:
-      const nomeCampanha   = c[1] || "Campanha";
+      const nomeCampanha   = c[1] || "Campanha Geral";
       const resultados     = c[2] || "0";
-      const custoRes       = c[3] + (c[4] ? "," + c[4] : "") || "R$ 0,00"; // Trata a vírgula do dinheiro
+      const custoRes       = c[3] + (c[4] ? "," + c[4] : "") || "R$ 0,00";
       const impressoes     = c[5] || "0";
       const alcance        = c[6] || "0";
-      const investimento   = c[7] + (c[8] ? "," + c[8] : "") || "R$ 0,00"; // Trata a vírgula do investimento
+      const investimento   = c[7] + (c[8] ? "," + c[8] : "") || "R$ 0,00";
       const cpc            = c[9] + (c[10] ? "," + c[10] : "") || "R$ 0,00";
       const cpm            = c[11] + (c[12] ? "," + c[12] : "") || "R$ 0,00";
 
       return `
-        <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff; margin-bottom: 20px;">
-          <h3 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600; color: #f3f4f6; border-bottom: 1px solid #2d2d35; padding-bottom: 10px;">
-            📢 ${nomeCampanha}
-          </h3>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
-            <div style="background: #17171c; padding: 14px; border-radius: 6px;">
-              <div style="color: #9ca3af; font-size: 11px; text-transform: uppercase; margin-bottom: 4px;">Investimento</div>
-              <div style="font-size: 20px; font-weight: 700; color: #fff;">${investimento}</div>
+        <div style="background: var(--color-background-secondary, #1e1e24); border: 0.5px solid var(--color-border-secondary, #2d2d35); padding: 24px; border-radius: 12px; color: var(--color-text-primary, #fff); margin-bottom: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+          
+          <!-- Cabeçalho do Card -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 0.5px solid var(--color-border-secondary, #2d2d35); padding-bottom: 14px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <i class="ti ti-chart-arcs" aria-hidden="true" style="font-size: 18px; color: var(--color-primary, #3b82f6);"></i>
+              <h3 style="margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.2px;">${nomeCampanha}</h3>
             </div>
-            <div style="background: #17171c; padding: 14px; border-radius: 6px;">
-              <div style="color: #10b981; font-size: 11px; text-transform: uppercase; margin-bottom: 4px;">Resultados</div>
-              <div style="font-size: 20px; font-weight: 700; color: #10b981;">${resultados}</div>
+            <span style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 0.5px solid rgba(16, 185, 129, 0.2); font-size: 11px; padding: 3px 10px; border-radius: 99px; font-weight: 500;">Ativo</span>
+          </div>
+
+          <!-- Grid de Métricas -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px;">
+            
+            <div style="background: var(--color-background-primary, #17171c); padding: 16px; border-radius: 8px; border: 0.5px solid var(--color-border-tertiary, #25252b);">
+              <div style="color: var(--color-text-tertiary, #9ca3af); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Investimento</div>
+              <div style="font-size: 22px; font-weight: 700; color: var(--color-text-primary, #fff);">${investimento}</div>
             </div>
-            <div style="background: #17171c; padding: 14px; border-radius: 6px;">
-              <div style="color: #9ca3af; font-size: 11px; text-transform: uppercase; margin-bottom: 4px;">Custo por Resultado</div>
-              <div style="font-size: 20px; font-weight: 700; color: #fff;">${custoRes}</div>
+
+            <div style="background: var(--color-background-primary, #17171c); padding: 16px; border-radius: 8px; border: 0.5px solid var(--color-border-tertiary, #25252b);">
+              <div style="color: #10b981; font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Resultados</div>
+              <div style="font-size: 22px; font-weight: 700; color: #10b981;">${resultados}</div>
             </div>
-            <div style="background: #17171c; padding: 14px; border-radius: 6px;">
-              <div style="color: #9ca3af; font-size: 11px; text-transform: uppercase; margin-bottom: 4px;">Impressões</div>
-              <div style="font-size: 20px; font-weight: 700; color: #fff;">${impressoes}</div>
+
+            <div style="background: var(--color-background-primary, #17171c); padding: 16px; border-radius: 8px; border: 0.5px solid var(--color-border-tertiary, #25252b);">
+              <div style="color: var(--color-text-tertiary, #9ca3af); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Custo por Resultado</div>
+              <div style="font-size: 20px; font-weight: 600; color: var(--color-text-secondary, #e5e7eb);">${custoRes}</div>
             </div>
-            <div style="background: #17171c; padding: 14px; border-radius: 6px;">
-              <div style="color: #9ca3af; font-size: 11px; text-transform: uppercase; margin-bottom: 4px;">Alcance</div>
-              <div style="font-size: 20px; font-weight: 700; color: #fff;">${alcance}</div>
+
+            <div style="background: var(--color-background-primary, #17171c); padding: 16px; border-radius: 8px; border: 0.5px solid var(--color-border-tertiary, #25252b);">
+              <div style="color: var(--color-text-tertiary, #9ca3af); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Impressões</div>
+              <div style="font-size: 20px; font-weight: 600; color: var(--color-text-secondary, #e5e7eb);">${impressoes}</div>
             </div>
-            <div style="background: #17171c; padding: 14px; border-radius: 6px;">
-              <div style="color: #9ca3af; font-size: 11px; text-transform: uppercase; margin-bottom: 4px;">CPC</div>
-              <div style="font-size: 20px; font-weight: 700; color: #fff;">${cpc}</div>
+
+            <div style="background: var(--color-background-primary, #17171c); padding: 16px; border-radius: 8px; border: 0.5px solid var(--color-border-tertiary, #25252b);">
+              <div style="color: var(--color-text-tertiary, #9ca3af); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Alcance</div>
+              <div style="font-size: 20px; font-weight: 600; color: var(--color-text-secondary, #e5e7eb);">${alcance}</div>
             </div>
-            <div style="background: #17171c; padding: 14px; border-radius: 6px;">
-              <div style="color: #9ca3af; font-size: 11px; text-transform: uppercase; margin-bottom: 4px;">CPM</div>
-              <div style="font-size: 20px; font-weight: 700; color: #fff;">${cpm}</div>
+
+            <div style="background: var(--color-background-primary, #17171c); padding: 16px; border-radius: 8px; border: 0.5px solid var(--color-border-tertiary, #25252b);">
+              <div style="color: var(--color-text-tertiary, #9ca3af); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">CPC (Custo por Clique)</div>
+              <div style="font-size: 20px; font-weight: 600; color: var(--color-text-secondary, #e5e7eb);">${cpc}</div>
             </div>
+
+            <div style="background: var(--color-background-primary, #17171c); padding: 16px; border-radius: 8px; border: 0.5px solid var(--color-border-tertiary, #25252b);">
+              <div style="color: var(--color-text-tertiary, #9ca3af); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">CPM (Custo por Mil)</div>
+              <div style="font-size: 20px; font-weight: 600; color: var(--color-text-secondary, #e5e7eb);">${cpm}</div>
+            </div>
+
           </div>
         </div>
       `;
@@ -1154,7 +1166,7 @@ async function renderAds() {
 
   } catch (error) {
     console.error("Erro ao carregar tráfego pago:", error);
-    container.innerHTML = `<div style="padding: 20px; color: #f43f5e;">Erro ao processar os dados da planilha.</div>`;
+    container.innerHTML = `<div style="padding: 20px; color: #f43f5e;">Erro ao processar os dados de tráfego.</div>`;
   }
 }
 
