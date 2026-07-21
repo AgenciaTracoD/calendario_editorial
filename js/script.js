@@ -1072,6 +1072,94 @@ function renderReports() {
 }
 
 /* -----------------------------------------------------------
+   16c. RENDERIZAÇÃO DE TRÁFEGO PAGO (PLANILHA)
+   ----------------------------------------------------------- */
+async function renderAds() {
+  const container = document.getElementById("ads-content");
+  if (!container) return;
+
+  container.innerHTML = `<div style="padding: 20px; color: #9ca3af;">Carregando dados de tráfego pago...</div>`;
+
+  const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTgn9xilq94Z8fjr1HB168n1dcybNReZg8D7_xZbHLc1P_vpZ2quah2ZlQAdWKXUJGnc1byXttqyeVz/pub?output=csv";
+
+  try {
+    const response = await fetch(csvUrl);
+    const data = await response.text();
+    const rows = data.split("\n").map(row => row.split(","));
+    
+    const clienteId = getClientIdFromUrl();
+    
+    // Filtra as linhas correspondentes ao cliente atual (ajuste o índice da coluna conforme sua planilha)
+    // Exemplo: row[0] é o ID do cliente e row[1] pode ser o mês ou o nome da campanha
+    const campanhas = rows.filter(row => row[0] && row[0].trim() === clienteId && row[0].trim() !== "ID_Cliente");
+
+    if (campanhas.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state" style="padding: 40px; text-align: center; color: #9ca3af;">
+          <div class="empty-title">Nenhum dado de tráfego pago encontrado para este cliente.</div>
+        </div>`;
+      return;
+    }
+
+    // Monta os cards com todas as métricas solicitadas
+    container.innerHTML = campanhas.map(c => {
+      // Mapeia as colunas da sua planilha (exemplo: c[2]=Resultados, c[3]=Custo/Res, c[4]=Impressões, c[5]=Alcance, c[6]=Investimento, c[7]=CPC, c[8]=CPM)
+      // Caso queira mudar a ordem das colunas, basta alterar o número do índice do array c[]
+      const nomeCampanha   = c[1] || "Campanha Geral";
+      const resultados     = c[2] || "0";
+      const custoRes       = c[3] || "R$ 0,00";
+      const impressoes     = c[4] || "0";
+      const alcance        = c[5] || "0";
+      const investimento   = c[6] || "R$ 0,00";
+      const cpc            = c[7] || "R$ 0,00";
+      const cpm            = c[8] || "R$ 0,00";
+
+      return `
+        <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff; margin-bottom: 20px;">
+          <h3 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600; color: #f3f4f6; border-bottom: 1px solid #2d2d35; padding-bottom: 10px;">
+            📢 ${nomeCampanha}
+          </h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <div style="background: #17171c; padding: 14px; border-radius: 6px;">
+              <div style="color: #9ca3af; font-size: 11px; text-transform: uppercase; margin-bottom: 4px;">Investimento</div>
+              <div style="font-size: 20px; font-weight: 700; color: #fff;">${investimento}</div>
+            </div>
+            <div style="background: #17171c; padding: 14px; border-radius: 6px;">
+              <div style="color: #10b981; font-size: 11px; text-transform: uppercase; margin-bottom: 4px;">Resultados</div>
+              <div style="font-size: 20px; font-weight: 700; color: #10b981;">${resultados}</div>
+            </div>
+            <div style="background: #17171c; padding: 14px; border-radius: 6px;">
+              <div style="color: #9ca3af; font-size: 11px; text-transform: uppercase; margin-bottom: 4px;">Custo por Resultado</div>
+              <div style="font-size: 20px; font-weight: 700; color: #fff;">${custoRes}</div>
+            </div>
+            <div style="background: #17171c; padding: 14px; border-radius: 6px;">
+              <div style="color: #9ca3af; font-size: 11px; text-transform: uppercase; margin-bottom: 4px;">Impressões</div>
+              <div style="font-size: 20px; font-weight: 700; color: #fff;">${impressoes}</div>
+            </div>
+            <div style="background: #17171c; padding: 14px; border-radius: 6px;">
+              <div style="color: #9ca3af; font-size: 11px; text-transform: uppercase; margin-bottom: 4px;">Alcance</div>
+              <div style="font-size: 20px; font-weight: 700; color: #fff;">${alcance}</div>
+            </div>
+            <div style="background: #17171c; padding: 14px; border-radius: 6px;">
+              <div style="color: #9ca3af; font-size: 11px; text-transform: uppercase; margin-bottom: 4px;">CPC (Custo por Clique)</div>
+              <div style="font-size: 20px; font-weight: 700; color: #fff;">${cpc}</div>
+            </div>
+            <div style="background: #17171c; padding: 14px; border-radius: 6px;">
+              <div style="color: #9ca3af; font-size: 11px; text-transform: uppercase; margin-bottom: 4px;">CPM (Custo por 1.000)</div>
+              <div style="font-size: 20px; font-weight: 700; color: #fff;">${cpm}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+  } catch (error) {
+    console.error("Erro ao carregar relatório de tráfego pago:", error);
+    container.innerHTML = `<div style="padding: 20px; color: #f43f5e;">Erro ao carregar dados do tráfego pago.</div>`;
+  }
+}
+
+/* -----------------------------------------------------------
    17. INICIALIZAÇÃO
    ----------------------------------------------------------- */
 document.addEventListener("DOMContentLoaded", load);
