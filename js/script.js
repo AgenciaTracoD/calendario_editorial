@@ -1096,22 +1096,26 @@ async function renderAds() {
     const dataRows = lines.slice(1).map(row => row.split(","));
     const clienteId = getClientIdFromUrl();
 
-    // Filtra pelo ID do cliente na Coluna A (índice 0)
-    let campanhas = dataRows.filter(row => row[0] && row[0].trim() === clienteId);
-    
-    // Se não achar por ID para teste, pega todas as linhas
-    if (campanhas.length === 0) campanhas = dataRows;
+    // Filtra rigorosamente apenas pelas campanhas do ID do cliente atual (Coluna A / índice 0)
+    const campanhas = dataRows.filter(row => row[0] && row[0].trim() === clienteId);
+
+    if (campanhas.length === 0) {
+      container.innerHTML = `<div style="padding: 20px; color: #9ca3af;">Nenhuma campanha de tráfego pago encontrada para este cliente.</div>`;
+      return;
+    }
 
     container.innerHTML = campanhas.map(c => {
-      // Ajuste exato das colunas conforme a sua planilha real:
-      const nomeCampanha   = c[1] || "Campanha";
-      const resultados     = c[2] || "0";
-      const custoRes       = c[3] + (c[4] ? "," + c[4] : "") || "R$ 0,00"; // Trata a vírgula do dinheiro
-      const impressoes     = c[5] || "0";
-      const alcance        = c[6] || "0";
-      const investimento   = c[7] + (c[8] ? "," + c[8] : "") || "R$ 0,00"; // Trata a vírgula do investimento
-      const cpc            = c[9] + (c[10] ? "," + c[10] : "") || "R$ 0,00";
-      const cpm            = c[11] + (c[12] ? "," + c[12] : "") || "R$ 0,00";
+      // Função auxiliar para remover as aspas que o CSV do Google Sheets adiciona
+      const limpar = (val) => (val || "").replace(/"/g, "").trim();
+
+      const nomeCampanha   = limpar(c[1]) || "Campanha";
+      const resultados     = limpar(c[2]) || "0";
+      const custoRes       = limpar(c[3]) + (c[4] ? "," + limpar(c[4]) : "") || "R$ 0,00";
+      const impressoes     = limpar(c[5]) || "0";
+      const alcance        = limpar(c[6]) || "0";
+      const investimento   = limpar(c[7]) + (c[8] ? "," + limpar(c[8]) : "") || "R$ 0,00";
+      const cpc            = limpar(c[9]) + (c[10] ? "," + limpar(c[10]) : "") || "R$ 0,00";
+      const cpm            = limpar(c[11]) + (c[12] ? "," + limpar(c[12]) : "") || "R$ 0,00";
 
       return `
         <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff; margin-bottom: 20px;">
