@@ -265,15 +265,22 @@ function setTab(tab) {
   
   const reportTab = document.getElementById("tab-reports");
   if (reportTab) reportTab.className = "tab-btn" + (tab === "reports" ? " on" : "");
+
+  const adsTab = document.getElementById("tab-ads");
+  if (adsTab) adsTab.className = "tab-btn" + (tab === "ads" ? " on" : "");
   
   document.getElementById("section-calendar").style.display = tab === "calendar" ? "" : "none";
   document.getElementById("section-demands").style.display  = tab === "demands"  ? "" : "none";
   
   const reportSec = document.getElementById("section-reports");
   if (reportSec) reportSec.style.display = tab === "reports" ? "" : "none";
+
+  const adsSec = document.getElementById("section-ads");
+  if (adsSec) adsSec.style.display = tab === "ads" ? "" : "none";
   
   if (tab === "demands") renderDemands();
   if (tab === "reports") renderReports();
+  if (tab === "ads") renderAds();
 }
 
 /* -----------------------------------------------------------
