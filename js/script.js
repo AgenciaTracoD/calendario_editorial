@@ -1086,7 +1086,6 @@ async function renderAds() {
     const response = await fetch(csvUrl);
     const text = await response.text();
     
-    // Divide o texto CSV em linhas
     const lines = text.split("\n").map(l => l.trim()).filter(l => l.length > 0);
     
     if (lines.length <= 1) {
@@ -1094,26 +1093,11 @@ async function renderAds() {
       return;
     }
 
-    // Pula a primeira linha (cabeçalho) e pega todas as linhas de dados
+    // Pega todas as linhas de dados (ignorando o cabeçalho)
     const dataRows = lines.slice(1).map(row => row.split(","));
-    const clienteId = getClientIdFromUrl();
 
-    // Tenta filtrar pelo ID do cliente. Se não achar nada, mostra todas para teste.
-    let campanhas = dataRows.filter(row => row[0] && row[0].trim() === clienteId);
-    
-    if (campanhas.length === 0) {
-      // Se o ID não bateu, exibe um aviso informando qual ID o site está procurando
-      container.innerHTML = `
-        <div style="padding: 20px; color: #f59e0b; background: #1e1e24; border-radius: 8px;">
-          <h3>Atenção com o ID do Cliente!</h3>
-          <p>O site está procurando pelo ID: <strong>${clienteId}</strong> na Coluna A da planilha.</p>
-          <p>Verifique se a Coluna A da sua planilha contém exatamente esse código.</p>
-        </div>`;
-      return;
-    }
-
-    // Renderiza os cards se encontrou as campanhas
-    container.innerHTML = campanhas.map(c => {
+    // Exibe todas as linhas encontradas na planilha (ignora o filtro de ID por enquanto para testar)
+    container.innerHTML = dataRows.map(c => {
       const nomeCampanha   = c[1] || "Campanha";
       const resultados     = c[2] || "0";
       const custoRes       = c[3] || "R$ 0,00";
