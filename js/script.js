@@ -903,37 +903,6 @@ function submitDemand() {
   closeDemandModal();
 }
 
-function openDemandDetail(id) {
-  const d=demands.find(x=>x.id===id);
-  if(!d) return;
-  document.getElementById("dd-title").textContent       = d.title;
-  document.getElementById("dd-type").textContent        = d.type;
-  document.getElementById("dd-created").textContent     = fmtDatetime(d.createdAt);
-  document.getElementById("dd-description").textContent = d.description||"Sem descrição.";
-  document.getElementById("dd-deadline").textContent    = d.deadline?formatDateSimple(d.deadline):"Não informado";
-  const rw=document.getElementById("dd-ref-wrap"); rw.style.display=d.reference?"":"none";
-  if(d.reference){const a=document.getElementById("dd-ref-link");a.href=d.reference;a.textContent=d.reference;}
-  const fw=document.getElementById("dd-files-wrap");
-  if(d.files&&d.files.length>0){
-    fw.style.display="";
-    document.getElementById("dd-files-list").innerHTML=d.files.map(f=>{
-      const isImage=f.type&&f.type.startsWith("image/"),isPDF=f.type==="application/pdf";
-      const icon=isPDF?"ti-file-type-pdf":isImage?"ti-photo":"ti-file";
-      return `<div class="file-chip-detail">${isImage?`<img src="${f.data}" class="file-preview-img">`:""}
-        <div style="display:flex;align-items:center;gap:6px;margin-top:${isImage?"6px":"0"}">
-          <i class="ti ${icon}" aria-hidden="true"></i>
-          <a href="${f.data}" download="${f.name}" style="font-size:12px;color:#3b82f6">${f.name}</a>
-        </div></div>`;
-    }).join("");
-  } else fw.style.display="none";
-  document.getElementById("dd-agency-notes").value=d.agencyNotes||"";
-  const sel=document.getElementById("dd-status-sel");
-  sel.innerHTML=DEMAND_STATUSES.map(s=>`<option${s===d.status?" selected":""}>${s}</option>`).join("");
-  document.getElementById("demand-detail-modal").style.display="flex";
-  document.getElementById("demand-detail-modal").dataset.demandId=id;
-}
-function closeDemandDetail() { document.getElementById("demand-detail-modal").style.display="none"; }
-
 function saveDemandDetail() {
   const id = document.getElementById("demand-detail-modal").dataset.demandId;
   const status      = document.getElementById("dd-status-sel").value;
@@ -945,7 +914,7 @@ function saveDemandDetail() {
   db.collection("clients").doc(currentClientId).collection("demands").doc(id)
     .update({ status, agencyNotes })
     .then(() => {
-      // Se alterou para "Produção" agora, cria automaticamente o card no Calendário Editorial
+      // 1. Se alterou para "Produção" agora, cria o card no Calendário Editorial nativamente
       if (status === "Produção" && statusAntigo !== "Produção") {
         const novaPub = {
           id: uid(),
@@ -961,6 +930,23 @@ function saveDemandDetail() {
         };
         db.collection("clients").doc(currentClientId).collection("entries").doc(novaPub.id).set(novaPub)
           .catch(err => console.error("Erro ao gerar card no calendário:", err));
+
+        // 2. Envia os dados via Webhook para o Make criar a tarefa no ClickUp
+        const webhookUrl = "https://hook.us2.make.com/91micj0xfrnqrd7xs729k1hqyd7fmjn8"; // Cole a URL do Make aqui entre as aspas
+        
+        fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            clientId: currentClientId,
+            clientName: clientName,
+            demandTitle: originalDemand.title,
+            demandType: originalDemand.type,
+            demandDescription: originalDemand.description || "",
+            demandDeadline: originalDemand.deadline || "",
+            demandReference: originalDemand.reference || ""
+          })
+        }).catch(err => console.error("Erro ao enviar webhook para o Make:", err));
       }
     })
     .catch(err => alert("Erro: " + err.message));
