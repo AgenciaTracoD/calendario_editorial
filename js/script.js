@@ -840,23 +840,34 @@ const DEMAND_STATUS_STYLE = {
 };
 
 function updateDemandBadge() {
-  const n=demands.filter(d=>d.status==="Novo").length;
-  const b=document.getElementById("demand-badge");
-  if(n>0){b.textContent=n;b.style.display="inline-flex";}else{b.style.display="none";}
+  const n = demands.filter(d => d.status === "Novo").length;
+  const b = document.getElementById("demand-badge");
+  if (b) {
+    if (n > 0) { b.textContent = n; b.style.display = "inline-flex"; }
+    else { b.style.display = "none"; }
+  }
 }
 
 function handleFileSelect(input) {
-  const preview=document.getElementById("df-file-preview");
-  preview.innerHTML=""; pendingFiles=[];
-  Array.from(input.files).forEach(file=>{
-    const reader=new FileReader();
-    reader.onload=function(ev){
-      pendingFiles.push({name:file.name,size:file.size,type:file.type,data:ev.target.result});
-      const isImage=file.type.startsWith("image/"),isPDF=file.type==="application/pdf";
-      const icon=isPDF?"ti-file-type-pdf":isImage?"ti-photo":"ti-file";
-      const chip=document.createElement("div"); chip.className="file-chip";
-      chip.innerHTML=`<i class="ti ${icon}" aria-hidden="true"></i><span>${file.name}</span>`;
-      if(isImage){const img=document.createElement("img");img.src=ev.target.result;img.className="file-preview-img";preview.appendChild(img);}
+  const preview = document.getElementById("df-file-preview");
+  if (!preview) return;
+  preview.innerHTML = ""; 
+  pendingFiles = [];
+  Array.from(input.files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      pendingFiles.push({name: file.name, size: file.size, type: file.type, data: ev.target.result});
+      const isImage = file.type.startsWith("image/"), isPDF = file.type === "application/pdf";
+      const icon = isPDF ? "ti-file-type-pdf" : isImage ? "ti-photo" : "ti-file";
+      const chip = document.createElement("div"); 
+      chip.className = "file-chip";
+      chip.innerHTML = `<i class="ti ${icon}" aria-hidden="true"></i><span>${file.name}</span>`;
+      if (isImage) {
+        const img = document.createElement("img"); 
+        img.src = ev.target.result; 
+        img.className = "file-preview-img"; 
+        preview.appendChild(img);
+      }
       preview.appendChild(chip);
     };
     reader.readAsDataURL(file);
@@ -864,15 +875,27 @@ function handleFileSelect(input) {
 }
 
 function openDemandModal() {
-  pendingFiles=[];
-  ["df-type","df-title","df-description","df-deadline","df-ref","df-file"].forEach(id=>{const el=document.getElementById(id);if(el)el.value=id==="df-type"?DEMAND_TYPES[0]:"";});
-  document.getElementById("df-file-preview").innerHTML="";
-  document.getElementById("demand-form-modal").style.display="flex";
+  pendingFiles = [];
+  ["df-type","df-title","df-description","df-deadline","df-ref","df-file"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = id === "df-type" ? DEMAND_TYPES[0] : "";
+  });
+  const preview = document.getElementById("df-file-preview");
+  if (preview) preview.innerHTML = "";
+  const modal = document.getElementById("demand-form-modal");
+  if (modal) modal.style.display = "flex";
 }
-function closeDemandModal() { document.getElementById("demand-form-modal").style.display="none"; pendingFiles=[]; }
+
+function closeDemandModal() { 
+  const modal = document.getElementById("demand-form-modal");
+  if (modal) modal.style.display = "none"; 
+  pendingFiles = []; 
+}
 
 function deleteDemand() {
-  const id = document.getElementById("demand-detail-modal").dataset.demandId;
+  const modal = document.getElementById("demand-detail-modal");
+  if (!modal) return;
+  const id = modal.dataset.demandId;
   if (!id) return;
   
   if (confirm("Tem certeza que deseja excluir esta demanda definitivamente? Essa ação não pode ser desfeita.")) {
@@ -885,10 +908,14 @@ function deleteDemand() {
 }
 
 function submitDemand() {
-  const title=document.getElementById("df-title").value.trim();
-  if(!title){document.getElementById("df-title").focus();return;}
-  const demand={
-    id:uid(), title,
+  const titleEl = document.getElementById("df-title");
+  if (!titleEl) return;
+  const title = titleEl.value.trim();
+  if (!title) { titleEl.focus(); return; }
+  
+  const demand = {
+    id: uid(), 
+    title,
     type:        document.getElementById("df-type").value,
     description: document.getElementById("df-description").value.trim(),
     deadline:    document.getElementById("df-deadline").value,
@@ -903,10 +930,71 @@ function submitDemand() {
   closeDemandModal();
 }
 
+function openDemandDetail(id) {
+  const d = demands.find(x => x.id === id);
+  if (!d) return;
+  
+  document.getElementById("dd-title").textContent       = d.title;
+  document.getElementById("dd-type").textContent        = d.type;
+  document.getElementById("dd-created").textContent     = fmtDatetime(d.createdAt);
+  document.getElementById("dd-description").textContent = d.description || "Sem descrição.";
+  document.getElementById("dd-deadline").textContent    = d.deadline ? formatDateSimple(d.deadline) : "Não informado";
+  
+  const rw = document.getElementById("dd-ref-wrap"); 
+  if (rw) rw.style.display = d.reference ? "" : "none";
+  if (d.reference) { 
+    const a = document.getElementById("dd-ref-link"); 
+    if (a) { a.href = d.reference; a.textContent = d.reference; } 
+  }
+  
+  const fw = document.getElementById("dd-files-wrap");
+  if (fw) {
+    if (d.files && d.files.length > 0) {
+      fw.style.display = "";
+      document.getElementById("dd-files-list").innerHTML = d.files.map(f => {
+        const isImage = f.type && f.type.startsWith("image/"), isPDF = f.type === "application/pdf";
+        const icon = isPDF ? "ti-file-type-pdf" : isImage ? "ti-photo" : "ti-file";
+        return `<div class="file-chip-detail">${isImage ? `<img src="${f.data}" class="file-preview-img">` : ""}
+          <div style="display:flex;align-items:center;gap:6px;margin-top:${isImage ? "6px" : "0"}">
+            <i class="ti ${icon}" aria-hidden="true"></i>
+            <a href="${f.data}" download="${f.name}" style="font-size:12px;color:#3b82f6">${f.name}</a>
+          </div></div>`;
+      }).join("");
+    } else { 
+      fw.style.display = "none"; 
+    }
+  }
+  
+  const notesEl = document.getElementById("dd-agency-notes");
+  if (notesEl) notesEl.value = d.agencyNotes || "";
+  
+  const sel = document.getElementById("dd-status-sel");
+  if (sel) {
+    sel.innerHTML = DEMAND_STATUSES.map(s => `<option${s === d.status ? " selected" : ""}>${s}</option>`).join("");
+  }
+  
+  const detailModal = document.getElementById("demand-detail-modal");
+  if (detailModal) {
+    detailModal.style.display = "flex";
+    detailModal.dataset.demandId = id;
+  }
+}
+
+function closeDemandDetail() { 
+  const modal = document.getElementById("demand-detail-modal");
+  if (modal) modal.style.display = "none"; 
+}
+
 function saveDemandDetail() {
-  const id = document.getElementById("demand-detail-modal").dataset.demandId;
-  const status      = document.getElementById("dd-status-sel").value;
-  const agencyNotes = document.getElementById("dd-agency-notes").value.trim();
+  const modal = document.getElementById("demand-detail-modal");
+  if (!modal) return;
+  const id = modal.dataset.demandId;
+  
+  const statusEl = document.getElementById("dd-status-sel");
+  const notesEl = document.getElementById("dd-agency-notes");
+  
+  const status      = statusEl ? statusEl.value : "Novo";
+  const agencyNotes = notesEl ? notesEl.value.trim() : "";
   
   const originalDemand = demands.find(x => x.id === id);
   const statusAntigo = originalDemand ? originalDemand.status : "";
@@ -915,7 +1003,7 @@ function saveDemandDetail() {
     .update({ status, agencyNotes })
     .then(() => {
       // 1. Se alterou para "Produção" agora, cria o card no Calendário Editorial nativamente
-      if (status === "Produção" && statusAntigo !== "Produção") {
+      if (status === "Produção" && statusAntigo !== "Produção" && originalDemand) {
         const novaPub = {
           id: uid(),
           theme: originalDemand.title,
@@ -932,7 +1020,7 @@ function saveDemandDetail() {
           .catch(err => console.error("Erro ao gerar card no calendário:", err));
 
         // 2. Envia os dados via Webhook para o Make criar a tarefa no ClickUp
-        const webhookUrl = "https://hook.us2.make.com/91micj0xfrnqrd7xs729k1hqyd7fmjn8"; // Cole a URL do Make aqui entre as aspas
+        const webhookUrl = "https://hook.us2.make.com/91micj0xfrnqrd7xs729k1hqyd7fmjn8";
         
         fetch(webhookUrl, {
           method: "POST",
@@ -955,18 +1043,20 @@ function saveDemandDetail() {
 }
 
 function renderDemands() {
-  const container=document.getElementById("demands-list");
-  if(demands.length===0){
-    container.innerHTML=`<div class="empty-state">
+  const container = document.getElementById("demands-list");
+  if (!container) return;
+  
+  if (demands.length === 0) {
+    container.innerHTML = `<div class="empty-state">
       <div class="empty-icon"><i class="ti ti-inbox" aria-hidden="true" style="font-size:40px;color:var(--color-text-tertiary)"></i></div>
       <div class="empty-title">Nenhuma demanda enviada</div>
       <div style="font-size:13px">Clique em "Nova Demanda" para enviar um pedido à agência</div>
     </div>`;
     return;
   }
-  container.innerHTML=demands.map(d=>{
-    const st=DEMAND_STATUS_STYLE[d.status]||DEMAND_STATUS_STYLE["Novo"];
-    const fc=d.files&&d.files.length>0?`<span class="file-count-badge"><i class="ti ti-paperclip" aria-hidden="true"></i> ${d.files.length} arquivo${d.files.length>1?"s":""}</span>`:"";
+  container.innerHTML = demands.map(d => {
+    const st = DEMAND_STATUS_STYLE[d.status] || DEMAND_STATUS_STYLE["Novo"];
+    const fc = d.files && d.files.length > 0 ? `<span class="file-count-badge"><i class="ti ti-paperclip" aria-hidden="true"></i> ${d.files.length} arquivo${d.files.length > 1 ? "s" : ""}</span>` : "";
     return `<div class="demand-card" onclick="openDemandDetail('${d.id}')">
       <div class="demand-card-header">
         <div>
@@ -975,11 +1065,12 @@ function renderDemands() {
         </div>
         <div class="status-pill" style="background:${st.bg};color:${st.text};border:0.5px solid ${st.border}">${d.status}</div>
       </div>
-      ${d.description?`<div class="demand-card-desc">${d.description}</div>`:""}
-      ${d.agencyNotes?`<div class="demand-card-notes"><i class="ti ti-message-circle" aria-hidden="true"></i> ${d.agencyNotes}</div>`:""}
+      ${d.description ? `<div class="demand-card-desc">${d.description}</div>` : ""}
+      ${d.agencyNotes ? `<div class="demand-card-notes"><i class="ti ti-message-circle" aria-hidden="true"></i> ${d.agencyNotes}</div>` : ""}
     </div>`;
   }).join("");
 }
+
 /* -----------------------------------------------------------
    16b. RENDERIZAÇÃO DO RELATÓRIO MENSAL (DASHBOARD)
    ----------------------------------------------------------- */
