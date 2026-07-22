@@ -832,13 +832,11 @@ function inlineRefuse() {
    16. DEMANDAS
    ----------------------------------------------------------- */
 const DEMAND_TYPES    = ["Post","Reels","Stories","Carrossel","Vídeo","Banner","E-mail Marketing","Material Impresso","Outro"];
-const DEMAND_STATUSES = ["Novo","Em análise","Em produção","Concluído","Recusado"];
+const DEMAND_STATUSES = ["Novo","Produção","Recusado"];
 const DEMAND_STATUS_STYLE = {
-  "Novo":        {bg:"#f0fdf4",border:"#bbf7d0",text:"#15803d",dot:"#22c55e"},
-  "Em análise":  {bg:"#fffbeb",border:"#fde68a",text:"#b45309",dot:"#f59e0b"},
-  "Em produção": {bg:"#eff6ff",border:"#bfdbfe",text:"#1d4ed8",dot:"#3b82f6"},
-  "Concluído":   {bg:"#ecfdf5",border:"#a7f3d0",text:"#065f46",dot:"#10b981"},
-  "Recusado":    {bg:"#fff1f2",border:"#fecdd3",text:"#be123c",dot:"#f43f5e"}
+  "Novo":       {bg:"#f0fdf4",border:"#bbf7d0",text:"#15803d",dot:"#22c55e"},
+  "Produção":   {bg:"#eff6ff",border:"#bfdbfe",text:"#1d4ed8",dot:"#3b82f6"},
+  "Recusado":   {bg:"#fff1f2",border:"#fecdd3",text:"#be123c",dot:"#f43f5e"}
 };
 
 function updateDemandBadge() {
@@ -873,7 +871,6 @@ function openDemandModal() {
 }
 function closeDemandModal() { document.getElementById("demand-form-modal").style.display="none"; pendingFiles=[]; }
 
-/* EXCLUSÃO DE DEMANDA */
 function deleteDemand() {
   const id = document.getElementById("demand-detail-modal").dataset.demandId;
   if (!id) return;
@@ -941,9 +938,33 @@ function saveDemandDetail() {
   const id = document.getElementById("demand-detail-modal").dataset.demandId;
   const status      = document.getElementById("dd-status-sel").value;
   const agencyNotes = document.getElementById("dd-agency-notes").value.trim();
+  
+  const originalDemand = demands.find(x => x.id === id);
+  const statusAntigo = originalDemand ? originalDemand.status : "";
+
   db.collection("clients").doc(currentClientId).collection("demands").doc(id)
     .update({ status, agencyNotes })
+    .then(() => {
+      // Se alterou para "Produção" agora, cria automaticamente o card no Calendário Editorial
+      if (status === "Produção" && statusAntigo !== "Produção") {
+        const novaPub = {
+          id: uid(),
+          theme: originalDemand.title,
+          date: originalDemand.deadline || new Date().toISOString().split("T")[0],
+          platform: "Instagram",
+          format: originalDemand.type === "Reels" ? "Reels" : originalDemand.type === "Stories" ? "Stories" : "Feed",
+          status: "Criação",
+          driveLink: originalDemand.reference || "",
+          observations: originalDemand.description || "",
+          reference: "",
+          history: []
+        };
+        db.collection("clients").doc(currentClientId).collection("entries").doc(novaPub.id).set(novaPub)
+          .catch(err => console.error("Erro ao gerar card no calendário:", err));
+      }
+    })
     .catch(err => alert("Erro: " + err.message));
+    
   closeDemandDetail();
 }
 
@@ -973,7 +994,6 @@ function renderDemands() {
     </div>`;
   }).join("");
 }
-
 /* -----------------------------------------------------------
    16b. RENDERIZAÇÃO DO RELATÓRIO MENSAL (DASHBOARD)
    ----------------------------------------------------------- */
