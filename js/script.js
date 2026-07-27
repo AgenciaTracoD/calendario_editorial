@@ -588,7 +588,8 @@ function handleApprovalFileSelect(input) {
   Array.from(input.files).forEach(file => {
     const reader = new FileReader();
     reader.onload = function(ev) {
-      pendingApprovalFiles.push({ name: file.name, size: file.size, type: file.type, data: ev.target.result });
+  const cleanBase64 = ev.target.result.replace(/^data:.*?;base64,/, "");
+  pendingApprovalFiles.push({ name: file.name, size: file.size, type: file.type, data: cleanBase64 });
       const isImage = file.type.startsWith("image/");
       const isPDF   = file.type === "application/pdf";
       const icon    = isPDF ? "ti-file-type-pdf" : isImage ? "ti-photo" : "ti-file";
