@@ -266,7 +266,8 @@ function setTab(tab) {
   const reportTab = document.getElementById("tab-reports");
   if (reportTab) reportTab.className = "tab-btn" + (tab === "reports" ? " on" : "");
 
-
+  const adsTab = document.getElementById("tab-ads");
+  if (adsTab) adsTab.className = "tab-btn" + (tab === "ads" ? " on" : "");
   
   document.getElementById("section-calendar").style.display = tab === "calendar" ? "" : "none";
   document.getElementById("section-demands").style.display  = tab === "demands"  ? "" : "none";
