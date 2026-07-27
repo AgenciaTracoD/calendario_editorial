@@ -237,7 +237,6 @@ function toggleClientMode() {
 
   if (clientMode) {
     if (btn) { btn.innerHTML = `<i class="ti ti-building" aria-hidden="true"></i> Modo Agência`; btn.classList.add("active-mode"); }
-    // Oculta botões internos da agência
     if (btnAddPub)   btnAddPub.style.display   = "none";
     if (btnSettings) btnSettings.style.display = "none";
     if (tabDemands)  tabDemands.style.display  = "none";
@@ -248,14 +247,13 @@ function toggleClientMode() {
     if (btnSettings) btnSettings.style.display = "";
     if (tabDemands)  tabDemands.style.display  = "";
     if (filtersBar)  filtersBar.style.display  = "";
-    // Volta para calendário se estava em demandas
     if (activeTab === "demands") setTab("calendar");
   }
   renderContent();
 }
 
 /* -----------------------------------------------------------
-   6. ABAS (CORRIGIDO PARA RECONHECER O RELATÓRIO)
+   6. ABAS
    ----------------------------------------------------------- */
 function setTab(tab) {
   activeTab = tab;
@@ -588,9 +586,9 @@ function handleApprovalFileSelect(input) {
   Array.from(input.files).forEach(file => {
     const reader = new FileReader();
     reader.onload = function(ev) {
-  const cleanBase64 = ev.target.result.replace(/^data:.*?;base64,/, "");
-  pendingApprovalFiles.push({ name: file.name, size: file.size, type: file.type, data: cleanBase64 });
-      const isImage = file.type.startsWith("image/");
+      const cleanBase64 = (ev.target.result || "").replace(/^data:.*?;base64,/, "");
+      pendingApprovalFiles.push({ name: file.name || "arquivo", size: file.size || 0, type: file.type || "image/png", data: cleanBase64 });
+      const isImage = file.type && file.type.startsWith("image/");
       const isPDF   = file.type === "application/pdf";
       const icon    = isPDF ? "ti-file-type-pdf" : isImage ? "ti-photo" : "ti-file";
       const chip    = document.createElement("div");
@@ -857,8 +855,14 @@ function handleFileSelect(input) {
   Array.from(input.files).forEach(file => {
     const reader = new FileReader();
     reader.onload = function(ev) {
-      pendingFiles.push({name: file.name, size: file.size, type: file.type, data: ev.target.result});
-      const isImage = file.type.startsWith("image/"), isPDF = file.type === "application/pdf";
+      const cleanBase64 = (ev.target.result || "").replace(/^data:.*?;base64,/, "");
+      pendingFiles.push({
+        name: file.name || "arquivo",
+        size: file.size || 0,
+        type: file.type || "image/png",
+        data: cleanBase64
+      });
+      const isImage = file.type && file.type.startsWith("image/"), isPDF = file.type === "application/pdf";
       const icon = isPDF ? "ti-file-type-pdf" : isImage ? "ti-photo" : "ti-file";
       const chip = document.createElement("div"); 
       chip.className = "file-chip";
@@ -914,6 +918,14 @@ function submitDemand() {
   const title = titleEl.value.trim();
   if (!title) { titleEl.focus(); return; }
   
+  // Limpa o array de arquivos para evitar objetos aninhados inválidos no Firestore
+  const cleanFiles = pendingFiles.map(f => ({
+    name: f.name || "arquivo",
+    size: f.size || 0,
+    type: f.type || "image/png",
+    data: f.data || ""
+  }));
+
   const demand = {
     id: uid(), 
     title,
@@ -921,11 +933,12 @@ function submitDemand() {
     description: document.getElementById("df-description").value.trim(),
     deadline:    document.getElementById("df-deadline").value,
     reference:   document.getElementById("df-ref").value.trim(),
-    files:       pendingFiles,
+    files:       cleanFiles,
     status:      "Novo",
     createdAt:   new Date().toISOString(),
     agencyNotes: ""
   };
+
   db.collection("clients").doc(currentClientId).collection("demands").doc(demand.id).set(demand)
     .catch(err => alert("Erro ao enviar demanda: " + err.message));
   closeDemandModal();
@@ -955,10 +968,11 @@ function openDemandDetail(id) {
       document.getElementById("dd-files-list").innerHTML = d.files.map(f => {
         const isImage = f.type && f.type.startsWith("image/"), isPDF = f.type === "application/pdf";
         const icon = isPDF ? "ti-file-type-pdf" : isImage ? "ti-photo" : "ti-file";
-        return `<div class="file-chip-detail">${isImage ? `<img src="${f.data}" class="file-preview-img">` : ""}
+        const srcData = f.data.startsWith("data:") ? f.data : `data:${f.type || 'image/png'};base64,${f.data}`;
+        return `<div class="file-chip-detail">${isImage ? `<img src="${srcData}" class="file-preview-img">` : ""}
           <div style="display:flex;align-items:center;gap:6px;margin-top:${isImage ? "6px" : "0"}">
             <i class="ti ${icon}" aria-hidden="true"></i>
-            <a href="${f.data}" download="${f.name}" style="font-size:12px;color:#3b82f6">${f.name}</a>
+            <a href="${srcData}" download="${f.name}" style="font-size:12px;color:#3b82f6">${f.name}</a>
           </div></div>`;
       }).join("");
     } else { 
@@ -1174,5 +1188,3 @@ function renderReports() {
    17. INICIALIZAÇÃO
    ----------------------------------------------------------- */
 document.addEventListener("DOMContentLoaded", load);
-
-function toggleClientMode() {}
