@@ -1032,7 +1032,8 @@ function saveDemandDetail() {
             demandType: originalDemand.type,
             demandDescription: originalDemand.description || "",
             demandDeadline: originalDemand.deadline || "",
-            demandReference: originalDemand.reference || ""
+            demandReference: originalDemand.reference || "",
+            demandFiles: originalDemand.files || []
           })
         }).catch(err => console.error("Erro ao enviar webhook para o Make:", err));
       }
