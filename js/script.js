@@ -1107,15 +1107,16 @@ function renderReports() {
   const container = document.getElementById("reports-content");
   if (!container) return;
 
-  // Garante que usa todas as publicações carregadas
-  const reportEntries = currentMonthEntries();
+  // Filtra as entradas do mês ativo diretamente da base total de dados
+  const ym = `${year}-${String(month + 1).padStart(2, "0")}`;
+  const reportEntries = (allEntries || []).filter(e => e.date && e.date.startsWith(ym));
   const totalPosts = reportEntries.length;
 
   if (totalPosts === 0) {
-    container.innerHTML = `<div class="empty-state">
+    container.innerHTML = `<div class="empty-state" style="padding: 40px 0;">
       <div class="empty-icon"><i class="ti ti-chart-donut" aria-hidden="true" style="font-size:40px;color:var(--color-text-tertiary)"></i></div>
       <div class="empty-title">Sem dados para este mês</div>
-      <div style="font-size:13px">Planeje ou publique posts neste mês para gerar o relatório estatístico.</div>
+      <div style="font-size:13px">Nenhuma publicação registrada neste mês para gerar o relatório.</div>
     </div>`;
     return;
   }
@@ -1133,21 +1134,26 @@ function renderReports() {
   });
 
   let html = `
+    <div style="margin-bottom: 20px;">
+      <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #111827;">Performance Estratégica</h3>
+      <div style="font-size: 13px; color: #6b7280;">Visão geral dos conteúdos e entregas deste mês</div>
+    </div>
+
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
       <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff;">
-        <div style="color: #9ca3af; font-size: 12px; font-weight: 500; text-transform: uppercase; margin-bottom: 4px;">Volume Planejado</div>
+        <div style="color: #9ca3af; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">VOLUME PLANEJADO</div>
         <div style="font-size: 28px; font-weight: 700;">${totalPosts} <span style="font-size: 14px; font-weight: 400; color: #9ca3af;">peças</span></div>
       </div>
       <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff;">
-        <div style="color: #10b981; font-size: 12px; font-weight: 500; text-transform: uppercase; margin-bottom: 4px;">Entregues / Publicados</div>
+        <div style="color: #10b981; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">ENTREGUES / PUBLICADOS</div>
         <div style="font-size: 28px; font-weight: 700; color: #10b981;">${publicados} <span style="font-size: 14px; font-weight: 400; color: #a7f3d0;">posts</span></div>
       </div>
       <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff;">
-        <div style="color: #3b82f6; font-size: 12px; font-weight: 500; text-transform: uppercase; margin-bottom: 4px;">Agendados / Prontos</div>
+        <div style="color: #3b82f6; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">AGENDADOS / PRONTOS</div>
         <div style="font-size: 28px; font-weight: 700; color: #3b82f6;">${agendados} <span style="font-size: 14px; font-weight: 400; color: #bfdbfe;">posts</span></div>
       </div>
       <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff;">
-        <div style="color: #f59e0b; font-size: 12px; font-weight: 500; text-transform: uppercase; margin-bottom: 4px;">Índice de Conclusão</div>
+        <div style="color: #f59e0b; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">ÍNDICE DE CONCLUSÃO</div>
         <div style="font-size: 28px; font-weight: 700; color: #f59e0b;">${taxaConclusao}%</div>
         <div style="background: #2d2d35; height: 6px; border-radius: 3px; margin-top: 8px; overflow: hidden;">
           <div style="background: #f59e0b; width: ${taxaConclusao}%; height: 100%;"></div>
@@ -1159,6 +1165,7 @@ function renderReports() {
       <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff;">
         <h4 style="margin: 0 0 16px 0; font-size: 14px; font-weight: 600; color: #e5e7eb;">Distribuição por Canal</h4>
         <div style="display: flex; flex-direction: column; gap: 12px;">
+          ${Object.keys(platContagem).length === 0 ? '<div style="color:#6b7280;font-size:13px">Nenhum canal registrado.</div>' : ''}
           ${Object.entries(platContagem).map(([plat, qtd]) => {
             const pct = Math.round((qtd / totalPosts) * 100);
             return `
@@ -1178,6 +1185,7 @@ function renderReports() {
       <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff;">
         <h4 style="margin: 0 0 16px 0; font-size: 14px; font-weight: 600; color: #e5e7eb;">Formatos Utilizados</h4>
         <div style="display: flex; flex-direction: column; gap: 12px;">
+          ${Object.keys(formContagem).length === 0 ? '<div style="color:#6b7280;font-size:13px">Nenhum formato registrado.</div>' : ''}
           ${Object.entries(formContagem).map(([form, qtd]) => {
             const pct = Math.round((qtd / totalPosts) * 100);
             return `
