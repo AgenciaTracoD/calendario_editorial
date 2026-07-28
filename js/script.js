@@ -1107,7 +1107,9 @@ function renderReports() {
   const container = document.getElementById("reports-content");
   if (!container) return;
 
-  const totalPosts = entries.length;
+  // Garante que usa todas as publicações carregadas
+  const reportEntries = currentMonthEntries();
+  const totalPosts = reportEntries.length;
 
   if (totalPosts === 0) {
     container.innerHTML = `<div class="empty-state">
@@ -1118,16 +1120,16 @@ function renderReports() {
     return;
   }
 
-  const publicados = entries.filter(e => (e.status || "").toLowerCase() === "publicado").length;
-  const agendados = entries.filter(e => (e.status || "").toLowerCase() === "agendado").length;
+  const publicados = reportEntries.filter(e => (e.status || "").toLowerCase() === "publicado").length;
+  const agendados  = reportEntries.filter(e => (e.status || "").toLowerCase() === "agendado").length;
   const taxaConclusao = totalPosts > 0 ? Math.round(((publicados + agendados) / totalPosts) * 100) : 0;
 
   const platContagem = {};
   const formContagem = {};
 
-  entries.forEach(e => {
+  reportEntries.forEach(e => {
     if (e.platform) platContagem[e.platform] = (platContagem[e.platform] || 0) + 1;
-    if (e.format) formContagem[e.format] = (formContagem[e.format] || 0) + 1;
+    if (e.format)   formContagem[e.format]     = (formContagem[e.format] || 0) + 1;
   });
 
   let html = `
