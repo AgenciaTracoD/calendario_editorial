@@ -22,10 +22,9 @@
       <div class="sep"></div>
       <div class="hdr-client" id="hdr-client">Nome do cliente</div>
     </div>
-    <!-- Sem botões de agência aqui -->
   </div>
 
-<!-- ABAS — cliente vê Calendário, Demandas e Relatório -->
+  <!-- ABAS — cliente vê Calendário, Demandas e Relatório -->
   <div class="tabs-bar">
     <button class="tab-btn on" id="tab-calendar" onclick="setTab('calendar')">
       <i class="ti ti-calendar" aria-hidden="true"></i> Calendário
@@ -38,15 +37,9 @@
       <i class="ti ti-chart-donut" aria-hidden="true"></i> Relatório Mensal
     </button>
   </div>
-    <!-- BOTAO ADICIONADO AQUI -->
-    <button class="tab-btn" id="tab-reports" onclick="setTab('reports')">
-      <i class="ti ti-chart-donut" aria-hidden="true"></i> Relatório
-    </button>
-  </div>
 
   <!-- SEÇÃO: CALENDÁRIO -->
   <div id="section-calendar">
-
     <div class="client-banner">
       <i class="ti ti-calendar-check" aria-hidden="true"></i>
       Confira as publicações do mês e aprove os criativos pendentes.
@@ -77,6 +70,11 @@
     <div class="content">
       <div id="demands-list"></div>
     </div>
+  </div>
+
+  <!-- SEÇÃO: RELATÓRIO MENSAL (AGORA INCLUÍDA) -->
+  <div id="section-reports" style="display:none; padding: 20px 0;">
+    <div class="content" id="reports-content"></div>
   </div>
 
 
@@ -220,7 +218,7 @@
   </div>
 </div>
 
-<!-- MODAL: DETALHE DA DEMANDA (cliente vê status + notas da agência, sem editar) -->
+<!-- MODAL: DETALHE DA DEMANDA -->
 <div class="modal-overlay" id="demand-detail-modal" style="display:none">
   <div class="modal" style="max-width:500px">
     <div class="modal-head">
@@ -253,7 +251,6 @@
       <div>
         <label class="form-label">Status</label>
         <div id="dd-status-display" class="demand-detail-text"></div>
-        <!-- campo oculto para reutilizar saveDemandDetail sem quebrar -->
         <select id="dd-status-sel" style="display:none"></select>
       </div>
       <div id="dd-notes-wrap" style="display:none">
@@ -270,7 +267,6 @@
 </div>
 
 <script>
-  // Força modo cliente ao carregar
   window.PAGE_MODE = "client";
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
