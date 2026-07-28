@@ -845,6 +845,14 @@ function updateDemandBadge() {
     if (n > 0) { b.textContent = n; b.style.display = "inline-flex"; }
     else { b.style.display = "none"; }
   }
+
+  // Atualiza o título na aba do navegador
+  const baseTitle = "Calendário Editorial — Traço D";
+  if (n > 0) {
+    document.title = `(${n}) ${baseTitle}`;
+  } else {
+    document.title = baseTitle;
+  }
 }
 
 function handleFileSelect(input) {
