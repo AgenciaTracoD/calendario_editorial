@@ -131,6 +131,7 @@ function attachClientListeners(clientId) {
     .onSnapshot(snap => {
       allEntries = snap.docs.map(d => d.data());
       render();
+      if (activeTab === "reports") renderReports();
     }, err => console.error("Erro ao carregar publicações:", err));
 
   _unsubDemands = db.collection("clients").doc(clientId).collection("demands")
@@ -233,17 +234,16 @@ function toggleClientMode() {
   const btnAddPub  = document.getElementById("btn-add-pub");
   const btnSettings = document.getElementById("btn-settings");
   const tabDemands = document.getElementById("tab-demands");
-  const tabReports = document.getElementById("tab-reports"); // <- Adicionado
+  const tabReports = document.getElementById("tab-reports");
   const filtersBar = document.getElementById("filters-bar");
 
   if (clientMode) {
     if (btn) { btn.innerHTML = `<i class="ti ti-building" aria-hidden="true"></i> Modo Agência`; btn.classList.add("active-mode"); }
-    // Oculta apenas o que é exclusivo da agência
     if (btnAddPub)   btnAddPub.style.display   = "none";
     if (btnSettings) btnSettings.style.display = "none";
     if (tabDemands)  tabDemands.style.display  = "none";
     if (filtersBar)  filtersBar.style.display  = "none";
-    if (tabReports)  tabReports.style.display  = ""; // <- Garante que a aba Relatório aparece pro cliente!
+    if (tabReports)  tabReports.style.display  = "";
   } else {
     if (btn) { btn.innerHTML = `<i class="ti ti-user" aria-hidden="true"></i> Modo Cliente`; btn.classList.remove("active-mode"); }
     if (btnAddPub)   btnAddPub.style.display   = "";
@@ -1114,10 +1114,6 @@ function renderReports() {
 
   if (totalPosts === 0) {
     container.innerHTML = `
-      <div style="margin-bottom: 20px;">
-        <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #111827;">Performance Estratégica</h3>
-        <div style="font-size: 13px; color: #6b7280;">Visão geral dos conteúdos e entregas deste mês</div>
-      </div>
       <div class="empty-state" style="padding: 40px 0;">
         <div class="empty-icon"><i class="ti ti-chart-donut" aria-hidden="true" style="font-size:40px;color:var(--color-text-tertiary)"></i></div>
         <div class="empty-title">Sem dados para este mês</div>
@@ -1139,11 +1135,6 @@ function renderReports() {
   });
 
   let html = `
-    <div style="margin-bottom: 20px;">
-      <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #111827;">Performance Estratégica</h3>
-      <div style="font-size: 13px; color: #6b7280;">Visão geral dos conteúdos e entregas deste mês</div>
-    </div>
-
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
       <div style="background: #1e1e24; border: 1px solid #2d2d35; padding: 20px; border-radius: 8px; color: #fff;">
         <div style="color: #9ca3af; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">VOLUME PLANEJADO</div>
