@@ -233,20 +233,25 @@ function toggleClientMode() {
   const btnAddPub  = document.getElementById("btn-add-pub");
   const btnSettings = document.getElementById("btn-settings");
   const tabDemands = document.getElementById("tab-demands");
+  const tabReports = document.getElementById("tab-reports"); // <- Adicionado
   const filtersBar = document.getElementById("filters-bar");
 
   if (clientMode) {
     if (btn) { btn.innerHTML = `<i class="ti ti-building" aria-hidden="true"></i> Modo Agência`; btn.classList.add("active-mode"); }
+    // Oculta apenas o que é exclusivo da agência
     if (btnAddPub)   btnAddPub.style.display   = "none";
     if (btnSettings) btnSettings.style.display = "none";
     if (tabDemands)  tabDemands.style.display  = "none";
     if (filtersBar)  filtersBar.style.display  = "none";
+    if (tabReports)  tabReports.style.display  = ""; // <- Garante que a aba Relatório aparece pro cliente!
   } else {
     if (btn) { btn.innerHTML = `<i class="ti ti-user" aria-hidden="true"></i> Modo Cliente`; btn.classList.remove("active-mode"); }
     if (btnAddPub)   btnAddPub.style.display   = "";
     if (btnSettings) btnSettings.style.display = "";
     if (tabDemands)  tabDemands.style.display  = "";
     if (filtersBar)  filtersBar.style.display  = "";
+    if (tabReports)  tabReports.style.display  = "";
+    
     if (activeTab === "demands") setTab("calendar");
   }
   renderContent();
