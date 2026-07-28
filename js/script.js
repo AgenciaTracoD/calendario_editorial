@@ -1107,17 +1107,22 @@ function renderReports() {
   const container = document.getElementById("reports-content");
   if (!container) return;
 
-  // Filtra as entradas do mês ativo diretamente da base total de dados
+  // Busca as publicações do mês ativo
   const ym = `${year}-${String(month + 1).padStart(2, "0")}`;
   const reportEntries = (allEntries || []).filter(e => e.date && e.date.startsWith(ym));
   const totalPosts = reportEntries.length;
 
   if (totalPosts === 0) {
-    container.innerHTML = `<div class="empty-state" style="padding: 40px 0;">
-      <div class="empty-icon"><i class="ti ti-chart-donut" aria-hidden="true" style="font-size:40px;color:var(--color-text-tertiary)"></i></div>
-      <div class="empty-title">Sem dados para este mês</div>
-      <div style="font-size:13px">Nenhuma publicação registrada neste mês para gerar o relatório.</div>
-    </div>`;
+    container.innerHTML = `
+      <div style="margin-bottom: 20px;">
+        <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #111827;">Performance Estratégica</h3>
+        <div style="font-size: 13px; color: #6b7280;">Visão geral dos conteúdos e entregas deste mês</div>
+      </div>
+      <div class="empty-state" style="padding: 40px 0;">
+        <div class="empty-icon"><i class="ti ti-chart-donut" aria-hidden="true" style="font-size:40px;color:var(--color-text-tertiary)"></i></div>
+        <div class="empty-title">Sem dados para este mês</div>
+        <div style="font-size:13px">Nenhuma publicação registrada neste mês para gerar o relatório.</div>
+      </div>`;
     return;
   }
 
