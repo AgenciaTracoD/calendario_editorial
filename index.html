@@ -89,18 +89,18 @@
       <button class="modal-close" onclick="closeClientApproval()">×</button>
     </div>
     <div class="modal-body">
-      <div class="ca-meta-row">
+<div class="ca-meta-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; align-items: center;">
         <div class="ca-meta-item">
           <div class="ca-meta-label">Plataforma</div>
-          <div class="ca-meta-value" id="ca-platform">—</div>
+          <div class="ca-meta-value" id="ca-platform" style="font-weight: 600; font-size: 13px;">—</div>
         </div>
         <div class="ca-meta-item">
           <div class="ca-meta-label">Formato</div>
-          <div class="ca-meta-value" id="ca-format">—</div>
+          <div class="ca-meta-value" id="ca-format" style="font-weight: 600; font-size: 13px;">—</div>
         </div>
         <div class="ca-meta-item">
-          <div class="ca-meta-label">Data de Publicação</div>
-          <input type="date" id="ca-date-input" style="padding: 6px 10px; border-radius: 6px; border: 1px solid var(--color-border-tertiary, #374151); background: var(--color-background-primary, #111827); color: var(--color-text-primary, #fff); font-size: 12px; margin-top: 2px;">
+          <div class="ca-meta-label">Data Prevista</div>
+          <input type="date" id="ca-date-input" style="width: 100%; box-sizing: border-box; padding: 4px 6px; border-radius: 6px; border: 1px solid #d1d5db; background: #fff; color: #111827; font-size: 12px; font-weight: 500;">
         </div>
       </div>
       <div>
