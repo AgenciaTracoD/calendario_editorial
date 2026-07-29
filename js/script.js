@@ -536,7 +536,14 @@ function openClientApproval(id) {
   document.getElementById("ca-theme").textContent    = e.theme || "(sem tema)";
   document.getElementById("ca-platform").textContent = e.platform;
   document.getElementById("ca-format").textContent   = e.format;
-  document.getElementById("ca-date").textContent     = formatDateSimple(e.date);
+  
+  // Carrega a data no texto ou no campo input se ele existir no HTML
+  const dateTxt = document.getElementById("ca-date");
+  if (dateTxt) dateTxt.textContent = formatDateSimple(e.date);
+  
+  const dateInput = document.getElementById("ca-date-input");
+  if (dateInput) dateInput.value = e.date || "";
+
   document.getElementById("ca-obs").textContent      = e.observations || "Nenhuma observação.";
 
   const driveWrap = document.getElementById("ca-drive-wrap");
@@ -624,6 +631,10 @@ function submitClientApproval() {
     return;
   }
 
+  // Pega a nova data do campo input (caso o cliente tenha alterado)
+  const dateInput = document.getElementById("ca-date-input");
+  const newDate = (dateInput && dateInput.value) ? dateInput.value : e.date;
+
   const history = e.history ? [...e.history] : [];
   let status;
 
@@ -641,8 +652,13 @@ function submitClientApproval() {
     status = "Agendado";
   }
 
+  // Salva atualizando o status, historico e a nova data
   db.collection("clients").doc(currentClientId).collection("entries").doc(id)
-    .update({ history, status })
+    .update({ 
+      history, 
+      status,
+      date: newDate 
+    })
     .catch(err => alert("Erro: " + err.message));
 
   closeClientApproval();
