@@ -88,21 +88,23 @@
       </div>
       <button class="modal-close" onclick="closeClientApproval()">×</button>
     </div>
-    <div class="modal-body">
-      <div class="ca-meta-row">
-        <div class="ca-meta-item">
-          <div class="ca-meta-label">Plataforma</div>
-          <div class="ca-meta-value" id="ca-platform">—</div>
-        </div>
-        <div class="ca-meta-item">
-          <div class="ca-meta-label">Formato</div>
-          <div class="ca-meta-value" id="ca-format">—</div>
-        </div>
-        <div class="ca-meta-item">
-          <div class="ca-meta-label">Data prevista</div>
-          <div class="ca-meta-value" id="ca-date">—</div>
-        </div>
-      </div>
+  <!-- Encontre essa div no index.html -->
+<div class="ca-meta-row">
+  <div class="ca-meta-item">
+    <div class="ca-meta-label">Plataforma</div>
+    <div class="ca-meta-value" id="ca-platform">—</div>
+  </div>
+  <div class="ca-meta-item">
+    <div class="ca-meta-label">Formato</div>
+    <div class="ca-meta-value" id="ca-format">—</div>
+  </div>
+  
+  <!-- ADICIONE OU SUBSTITUA ESTE CAMPO ABAIXO -->
+  <div class="ca-meta-item">
+    <div class="ca-meta-label">Data prevista</div>
+    <input type="date" id="ca-date-input" style="padding: 4px 8px; border-radius: 6px; border: 1px solid #374151; background: #1f2937; color: #fff; font-size: 12px;">
+  </div>
+</div>
       <div>
         <div class="ca-meta-label">Observações da agência</div>
         <div class="ca-obs-box" id="ca-obs"></div>
