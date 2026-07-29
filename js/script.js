@@ -534,11 +534,12 @@ function openClientApproval(id) {
   pendingApprovalFiles = [];
 
   document.getElementById("ca-theme").textContent    = e.theme || "(sem tema)";
-  document.getElementById("ca-platform").textContent = e.platform || "—"; // Corrigido
-  document.getElementById("ca-format").textContent   = e.format || "—";   // Corrigido
+  document.getElementById("ca-platform").textContent = e.platform || "—";
+  document.getElementById("ca-format").textContent   = e.format || "—";
   
-  const dateInput = document.getElementById("ca-date-input");
-  if (dateInput) dateInput.value = e.date || "";
+  // Carrega a data no texto ou no campo input se ele existir no HTML
+  const dateTxt = document.getElementById("ca-date");
+  if (dateTxt) dateTxt.textContent = formatDateSimple(e.date);
   
   const dateInput = document.getElementById("ca-date-input");
   if (dateInput) dateInput.value = e.date || "";
